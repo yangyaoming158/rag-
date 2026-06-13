@@ -85,3 +85,27 @@
 - 遗留：
   - Phase 0 阶段完成提交尚未执行。
   - 下一步进入 Phase 1 前，需先创建 `docs/plans/phase-1.md`。
+
+## 2026-06-13 — Phase 1 知识库与文档管理
+
+- 做了什么：
+  - 从 `main` 切出 `phase-1`，创建 `docs/plans/phase-1.md`，按 API 2–8 拆分 KB CRUD、上传落盘、文档列表/删除、前端管理页四张任务卡。
+  - 后端新增 `KnowledgeBaseRepository`、`DocumentRepository`、`IngestionJobRepository`，实现 owner 过滤、分页文档列表、PARSE/PENDING job 查询。
+  - 后端新增 `StorageService` / `LocalStorageService`，文件按 `{kbId}/{docId}.{ext}` 落到 `rag.storage.root`，删除文档或 KB 时清理本地文件。
+  - 后端新增 `DocumentFileValidator`，集中处理空文件、20MB 上限、扩展名白名单与原始文件名清洗；单测覆盖 `.exe`、空文件、超限和允许的 Markdown。
+  - 后端新增 `KbController` 与 `DocumentController`，开放 `POST/GET/DELETE /api/kbs`、`POST/GET /api/kbs/{kbId}/documents`、`DELETE /api/documents/{id}`、`GET /api/documents/{id}/ingestion`。
+  - 前端新增 `frontend/src/api/kbs.ts`、知识库列表页和知识库详情页，支持新建、打开、上传、状态表格、任务抽屉、删除确认。
+  - 更新 README 当前状态与 Phase 1 可用能力。
+- 没做什么：
+  - 未实现解析、切块、embedding、检索、问答、重新解析、docx、批量上传或断点续传。
+  - 未引入 MinIO、Redis、MQ、独立向量库或额外服务容器。
+- 验证：
+  - `backend`: `mvn test` 通过，5 个测试。
+  - `frontend`: `npm run build` 通过；仍有 Element Plus 大 chunk 警告。
+  - `docker compose up -d --build` 通过，postgres、backend、frontend 三容器 healthy。
+  - Gate 脚本：`.exe` 上传返回 HTTP 422 / code 42201；重复 `.md` 返回 HTTP 409 / code 40901；正常 `.md` 返回 `UPLOADED` 文档与 `PARSE/PENDING` job；删除 KB 后 `/app/data/files/{kbId}/{docId}.md` 不存在。
+  - 文档删除脚本：`DELETE /api/documents/{id}` 返回 HTTP 200 / code 0；删除后 `/app/data/files/{kbId}/{docId}.txt` 不存在。
+  - 前端容器：`http://localhost:3000/` 返回 200；`http://localhost:3000/api/auth/login` 反代返回 200。
+- 遗留：
+  - 前端依赖审计仍提示 3 个 high severity vulnerabilities，未在 Phase 1 范围内处理。
+  - 下一步进入 Phase 2 前，需先创建 `docs/plans/phase-2.md`，并按规划由 Opus 负责切块算法实现与单测。

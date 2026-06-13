@@ -1,0 +1,49 @@
+package com.ragdocs.web;
+
+import com.ragdocs.auth.CurrentUser;
+import com.ragdocs.auth.JwtAuthenticationFilter;
+import com.ragdocs.common.ApiResponse;
+import com.ragdocs.service.KbService;
+import com.ragdocs.web.dto.CreateKbRequest;
+import com.ragdocs.web.dto.KbDto;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/kbs")
+public class KbController {
+    private final KbService kbService;
+
+    public KbController(KbService kbService) {
+        this.kbService = kbService;
+    }
+
+    @GetMapping
+    public ApiResponse<List<KbDto>> list(HttpServletRequest request) {
+        return ApiResponse.ok(kbService.list(currentUser(request).id()));
+    }
+
+    @PostMapping
+    public ApiResponse<KbDto> create(@Valid @RequestBody CreateKbRequest body, HttpServletRequest request) {
+        return ApiResponse.ok(kbService.create(currentUser(request).id(), body));
+    }
+
+    @DeleteMapping("/{id}")
+    public ApiResponse<Void> delete(@PathVariable long id, HttpServletRequest request) {
+        kbService.delete(currentUser(request).id(), id);
+        return ApiResponse.ok(null);
+    }
+
+    private CurrentUser currentUser(HttpServletRequest request) {
+        return (CurrentUser) request.getAttribute(JwtAuthenticationFilter.CURRENT_USER_ATTRIBUTE);
+    }
+}
