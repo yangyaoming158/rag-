@@ -1,0 +1,49 @@
+server:
+  port: ${SERVER_PORT:8080}
+
+spring:
+  application:
+    name: devdocs-rag-backend
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5433/devdocs_rag}
+    username: ${SPRING_DATASOURCE_USERNAME:rag_user}
+    password: ${SPRING_DATASOURCE_PASSWORD:rag_password}
+  flyway:
+    enabled: true
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 20MB
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+rag:
+  jwt:
+    secret: ${RAG_JWT_SECRET:devdocs-rag-change-me-please-32-bytes-min}
+    expiration-minutes: ${RAG_JWT_EXPIRATION_MINUTES:480}
+  storage:
+    root: ${RAG_STORAGE_ROOT:./data/files}
+  ai:
+    chat:
+      provider: ${RAG_AI_CHAT_PROVIDER:mock}
+      base-url: ${RAG_AI_CHAT_BASE_URL:}
+      api-key: ${RAG_AI_CHAT_API_KEY:}
+      model: ${RAG_AI_CHAT_MODEL:mock-chat}
+    embedding:
+      provider: ${RAG_AI_EMBEDDING_PROVIDER:mock}
+      base-url: ${RAG_AI_EMBEDDING_BASE_URL:}
+      api-key: ${RAG_AI_EMBEDDING_API_KEY:}
+      model: ${RAG_AI_EMBEDDING_MODEL:mock-bge-m3}
+      dimensions: ${RAG_AI_EMBEDDING_DIMENSIONS:1024}
+
+logging:
+  level:
+    com.ragdocs: INFO
