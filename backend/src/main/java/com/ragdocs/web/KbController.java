@@ -3,9 +3,12 @@ package com.ragdocs.web;
 import com.ragdocs.auth.CurrentUser;
 import com.ragdocs.auth.JwtAuthenticationFilter;
 import com.ragdocs.common.ApiResponse;
+import com.ragdocs.retrieval.RetrievalService;
 import com.ragdocs.service.KbService;
 import com.ragdocs.web.dto.CreateKbRequest;
 import com.ragdocs.web.dto.KbDto;
+import com.ragdocs.web.dto.RetrievalDebugRequest;
+import com.ragdocs.web.dto.RetrievalDebugResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -22,9 +25,11 @@ import java.util.List;
 @RequestMapping("/api/kbs")
 public class KbController {
     private final KbService kbService;
+    private final RetrievalService retrievalService;
 
-    public KbController(KbService kbService) {
+    public KbController(KbService kbService, RetrievalService retrievalService) {
         this.kbService = kbService;
+        this.retrievalService = retrievalService;
     }
 
     @GetMapping
@@ -41,6 +46,15 @@ public class KbController {
     public ApiResponse<Void> delete(@PathVariable long id, HttpServletRequest request) {
         kbService.delete(currentUser(request).id(), id);
         return ApiResponse.ok(null);
+    }
+
+    @PostMapping("/{id}/retrieval/debug")
+    public ApiResponse<RetrievalDebugResponse> retrievalDebug(
+            @PathVariable long id,
+            @Valid @RequestBody RetrievalDebugRequest body,
+            HttpServletRequest request
+    ) {
+        return ApiResponse.ok(retrievalService.debug(currentUser(request).id(), id, body));
     }
 
     private CurrentUser currentUser(HttpServletRequest request) {

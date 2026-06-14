@@ -43,6 +43,11 @@ rag:
       api-key: ${RAG_AI_EMBEDDING_API_KEY:}
       model: ${RAG_AI_EMBEDDING_MODEL:mock-bge-m3}
       dimensions: ${RAG_AI_EMBEDDING_DIMENSIONS:1024}
+      max-batch-size: ${RAG_AI_EMBEDDING_MAX_BATCH_SIZE:32}
+  retrieval:
+    min-similarity: ${RAG_RETRIEVAL_MIN_SIMILARITY:0.35}
+    default-top-k: ${RAG_RETRIEVAL_DEFAULT_TOP_K:8}
+    max-top-k: ${RAG_RETRIEVAL_MAX_TOP_K:20}
 
 logging:
   level:
