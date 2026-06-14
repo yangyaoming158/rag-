@@ -36,6 +36,28 @@ export interface JobDto {
   createdAt: string
 }
 
+export interface RetrievalHitDto {
+  rank: number
+  chunkId: number
+  documentId: number
+  documentFilename: string
+  chunkIndex: number
+  headingPath: string | null
+  pageStart: number | null
+  pageEnd: number | null
+  charLen: number
+  similarity: number
+  aboveThreshold: boolean
+  contentPreview: string
+}
+
+export interface RetrievalDebugResponse {
+  query: string
+  topK: number
+  minSimilarity: number
+  hits: RetrievalHitDto[]
+}
+
 export interface PageResponse<T> {
   content: T[]
   page: number
@@ -84,5 +106,10 @@ export async function reingestDocument(id: number) {
 
 export async function listIngestionJobs(id: number) {
   const response = await http.get<ApiResponse<JobDto[]>>(`/api/documents/${id}/ingestion`)
+  return response.data.data
+}
+
+export async function debugRetrieval(kbId: number, payload: { query: string; topK: number }) {
+  const response = await http.post<ApiResponse<RetrievalDebugResponse>>(`/api/kbs/${kbId}/retrieval/debug`, payload)
   return response.data.data
 }

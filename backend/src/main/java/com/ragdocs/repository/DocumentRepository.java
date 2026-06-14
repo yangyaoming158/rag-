@@ -111,6 +111,14 @@ public class DocumentRepository {
                 """, chunkCount, id);
     }
 
+    public void markReady(long id, int chunkCount) {
+        jdbcTemplate.update("""
+                UPDATE documents
+                SET status = 'READY', error_message = NULL, chunk_count = ?, updated_at = now()
+                WHERE id = ?
+                """, chunkCount, id);
+    }
+
     public void resetForReingest(long id) {
         jdbcTemplate.update("""
                 UPDATE documents

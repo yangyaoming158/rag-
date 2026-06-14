@@ -134,3 +134,30 @@
 - 遗留：
   - 当前文档成功处理后停在 `EMBEDDING`，Phase 3 负责调用 embedding provider、写入 `document_chunks.embedding` 并把文档置为 `READY`。
   - 前端依赖审计与 Element Plus 大 chunk 警告仍按前述结论延后处理。
+
+## 2026-06-14 — Phase 3 Embedding 与向量检索
+
+- 做了什么：
+  - 创建 `docs/plans/phase-3.md`，按 Provider、EMBED job、检索 SQL/API、隔离测试、前端调试页和 10 query 标定拆任务卡。
+  - 新增 `EmbeddingProvider`、`MockEmbeddingProvider`、`OpenAiCompatibleEmbeddingProvider` 与 `AiProperties`；默认 Mock provider 无 key 可跑，真实 provider 走 OpenAI 兼容 `/embeddings`。
+  - 新增 `ModelCallLogRepository`，embedding 批调用写入 `model_call_logs`，包含 provider、model、tokens、latency、status 和错误。
+  - 扩展 `IngestionWorker`：`PARSE → CHUNK → EMBED` 串行执行，EMBED 分批最多 32 条，失败批级重试 3 次；全部 chunk 写入向量后文档置为 `READY`。
+  - embedding 输入从纯正文调整为 `original_filename + heading_path + chunk content`，避免标题/文件名信号丢失。
+  - 新增检索层：`RetrievalRepository` 使用 pgvector `<=>` SQL，强制 `kb_id` 过滤且只查 `READY` 文档；`RetrievalService` 先校验 owner，再调用 query embedding。
+  - 新增 `POST /api/kbs/{kbId}/retrieval/debug`，返回 topK chunk、similarity、阈值命中、来源文件、heading、页码和 500 字预览。
+  - 前端 KB 详情页新增“检索调试”区域，支持 query/topK 输入和 topK 结果表格展示；EMBEDDING 状态下禁用重跑。
+  - 新增 provider 单测和检索隔离测试；为当前环境移除 Mockito inline 依赖，使用手写 fake repository，避免 JDK attach 限制导致测试不稳定。
+  - 用 mini-mall 8 份真实 Markdown 文档跑 10 query 标定，Mock 模式 top1 命中 8/10，结果写入 `docs/eval/retrieval.md`；默认阈值标定为 `0.35`。
+- 没做什么：
+  - 未实现 RAG 问答、ChatProvider、prompt、引用解析、会话历史、NO_ANSWER 响应和模型调用日志后台页。
+  - 未引入 Milvus/ES、Spring AI PgVectorStore、LangChain4j、hybrid 检索、rerank、Redis 或 MQ。
+  - 未用真实 SiliconFlow/DashScope embedding key 复测分数分布。
+- 验证：
+  - `backend`: `mvn test` 通过，18 个测试。
+  - `frontend`: `npm run build` 通过；仍有 Element Plus 大 chunk 警告。
+  - `docker compose build --pull=false backend && docker compose up -d backend` 通过；三容器 healthy。
+  - Mock 全链路：上传 mini-mall README 后状态从 `PARSING` 到 `READY`，5 个 chunk 均写入 `mock-bge-m3` embedding，检索调试接口返回 topK。
+  - mini-mall eval KB：8 份文档全部 `READY`；10 query top1 命中 8/10。
+- 遗留：
+  - `docs/eval/retrieval.md` 当前是 Mock provider 基线；接入真实 embedding provider 后必须复测并重新标定阈值。
+  - 前端依赖审计与 Element Plus 大 chunk 警告继续延后处理。

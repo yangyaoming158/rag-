@@ -73,6 +73,62 @@
         :total="page.totalElements"
         @current-change="changePage"
       />
+
+      <section class="retrieval-debug">
+        <div class="section-title">
+          <h2>检索调试</h2>
+          <el-tag v-if="retrievalResult" effect="plain">阈值 {{ retrievalResult.minSimilarity.toFixed(2) }}</el-tag>
+        </div>
+        <div class="retrieval-form">
+          <el-input
+            v-model="retrievalQuery"
+            type="textarea"
+            :rows="3"
+            maxlength="2000"
+            show-word-limit
+            placeholder="输入 query"
+          />
+          <div class="retrieval-actions">
+            <el-input-number v-model="retrievalTopK" :min="1" :max="20" controls-position="right" />
+            <el-button type="primary" :icon="Search" :loading="retrievalLoading" @click="runRetrievalDebug">
+              检索
+            </el-button>
+          </div>
+        </div>
+
+        <el-empty v-if="retrievalResult && retrievalResult.hits.length === 0" description="暂无命中" />
+        <el-table
+          v-else-if="retrievalResult"
+          :data="retrievalResult.hits"
+          class="data-table"
+          row-key="chunkId"
+        >
+          <el-table-column prop="rank" label="#" width="64" />
+          <el-table-column label="Score" width="110">
+            <template #default="{ row }">
+              <el-tag :type="row.aboveThreshold ? 'success' : 'info'" effect="plain">
+                {{ formatScore(row.similarity) }}
+              </el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="来源" min-width="220">
+            <template #default="{ row }">
+              <div class="hit-source">
+                <strong>{{ row.documentFilename }}</strong>
+                <span>chunk #{{ row.chunkIndex }}</span>
+                <span v-if="row.headingPath">{{ row.headingPath }}</span>
+                <span v-if="row.pageStart">p.{{ row.pageStart }}{{ row.pageEnd && row.pageEnd !== row.pageStart ? `-${row.pageEnd}` : '' }}</span>
+              </div>
+            </template>
+          </el-table-column>
+          <el-table-column label="预览" min-width="360">
+            <template #default="{ row }">
+              <p class="hit-preview">{{ row.contentPreview }}</p>
+            </template>
+          </el-table-column>
+          <el-table-column prop="charLen" label="Chars" width="90" />
+        </el-table>
+      </section>
     </section>
 
     <el-drawer v-model="jobsVisible" title="处理任务" size="420px">
@@ -92,12 +148,12 @@
 </template>
 
 <script setup lang="ts">
-import { ArrowLeft, Delete, Refresh, RefreshRight, Tickets, Upload } from '@element-plus/icons-vue'
+import { ArrowLeft, Delete, Refresh, RefreshRight, Search, Tickets, Upload } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox, type UploadRequestOptions } from 'element-plus'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import * as kbApi from '../api/kbs'
-import type { DocumentDto, JobDto, KbDto } from '../api/kbs'
+import type { DocumentDto, JobDto, KbDto, RetrievalDebugResponse } from '../api/kbs'
 
 const route = useRoute()
 const router = useRouter()
@@ -108,6 +164,10 @@ const documents = ref<DocumentDto[]>([])
 const kbs = ref<KbDto[]>([])
 const jobs = ref<JobDto[]>([])
 const jobsVisible = ref(false)
+const retrievalQuery = ref('')
+const retrievalTopK = ref(8)
+const retrievalLoading = ref(false)
+const retrievalResult = ref<RetrievalDebugResponse | null>(null)
 const page = ref({ page: 0, size: 20, totalElements: 0 })
 let timer: number | undefined
 
@@ -182,6 +242,23 @@ async function openJobs(document: DocumentDto) {
   jobsVisible.value = true
 }
 
+async function runRetrievalDebug() {
+  const query = retrievalQuery.value.trim()
+  if (!query) {
+    ElMessage.warning('请输入 query')
+    return
+  }
+  retrievalLoading.value = true
+  try {
+    retrievalResult.value = await kbApi.debugRetrieval(kbId, {
+      query,
+      topK: retrievalTopK.value
+    })
+  } finally {
+    retrievalLoading.value = false
+  }
+}
+
 async function changePage(value: number) {
   page.value.page = value - 1
   await loadDocuments()
@@ -196,7 +273,7 @@ function statusTag(status: string) {
 }
 
 function isProcessing(status: string) {
-  return status === 'PARSING' || status === 'CHUNKING'
+  return status === 'PARSING' || status === 'CHUNKING' || status === 'EMBEDDING'
 }
 
 function formatBytes(value: number) {
@@ -213,6 +290,10 @@ function formatTime(value: string | null) {
     hour: '2-digit',
     minute: '2-digit'
   }).format(new Date(value))
+}
+
+function formatScore(value: number) {
+  return value.toFixed(3)
 }
 </script>
 
@@ -240,6 +321,54 @@ function formatTime(value: string | null) {
 .error-message {
   color: #b42318;
   margin: 8px 0;
+  overflow-wrap: anywhere;
+}
+
+.retrieval-debug {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+}
+
+.section-title {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.section-title h2 {
+  font-size: 18px;
+  margin: 0;
+}
+
+.retrieval-form {
+  display: grid;
+  gap: 12px;
+}
+
+.retrieval-actions {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+}
+
+.hit-source {
+  display: grid;
+  gap: 4px;
+  line-height: 1.45;
+}
+
+.hit-source span {
+  color: #6b7280;
+  overflow-wrap: anywhere;
+}
+
+.hit-preview {
+  line-height: 1.55;
+  margin: 0;
   overflow-wrap: anywhere;
 }
 </style>
