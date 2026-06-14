@@ -55,6 +55,11 @@ public class DocumentController {
         return ApiResponse.ok(null);
     }
 
+    @PostMapping("/documents/{id}/reingest")
+    public ApiResponse<DocumentDto> reingest(@PathVariable long id, HttpServletRequest request) {
+        return ApiResponse.ok(documentService.reingest(currentUser(request).id(), id));
+    }
+
     @GetMapping("/documents/{id}/ingestion")
     public ApiResponse<List<JobDto>> ingestion(@PathVariable long id, HttpServletRequest request) {
         return ApiResponse.ok(documentService.ingestionJobs(currentUser(request).id(), id));

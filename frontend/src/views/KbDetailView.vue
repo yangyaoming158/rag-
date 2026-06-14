@@ -21,6 +21,22 @@
 
     <section class="page-content">
       <el-table :data="documents" v-loading="loading" class="data-table" row-key="id">
+        <el-table-column type="expand" width="44">
+          <template #default="{ row }">
+            <div class="expanded-row">
+              <el-alert
+                v-if="row.errorMessage"
+                :title="row.errorMessage"
+                type="error"
+                :closable="false"
+              />
+              <el-descriptions v-else :column="2" border>
+                <el-descriptions-item label="Content-Type">{{ row.contentType }}</el-descriptions-item>
+                <el-descriptions-item label="更新时间">{{ formatTime(row.updatedAt) }}</el-descriptions-item>
+              </el-descriptions>
+            </div>
+          </template>
+        </el-table-column>
         <el-table-column prop="originalFilename" label="文件名" min-width="240">
           <template #default="{ row }">
             <span class="filename">{{ row.originalFilename }}</span>
@@ -38,9 +54,12 @@
         <el-table-column prop="createdAt" label="上传时间" width="180">
           <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="210" fixed="right">
+        <el-table-column label="操作" width="280" fixed="right">
           <template #default="{ row }">
             <el-button text :icon="Tickets" @click="openJobs(row)">任务</el-button>
+            <el-button text :icon="RefreshRight" :disabled="isProcessing(row.status)" @click="confirmReingest(row)">
+              重跑
+            </el-button>
             <el-button text type="danger" :icon="Delete" @click="confirmDeleteDocument(row)">删除</el-button>
           </template>
         </el-table-column>
@@ -73,7 +92,7 @@
 </template>
 
 <script setup lang="ts">
-import { ArrowLeft, Delete, Refresh, Tickets, Upload } from '@element-plus/icons-vue'
+import { ArrowLeft, Delete, Refresh, RefreshRight, Tickets, Upload } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox, type UploadRequestOptions } from 'element-plus'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -147,6 +166,17 @@ async function confirmDeleteDocument(document: DocumentDto) {
   await loadDocuments()
 }
 
+async function confirmReingest(document: DocumentDto) {
+  await ElMessageBox.confirm(`重新解析「${document.originalFilename}」？`, '重新解析', {
+    type: 'warning',
+    confirmButtonText: '重跑',
+    cancelButtonText: '取消'
+  })
+  await kbApi.reingestDocument(document.id)
+  ElMessage.success('已触发重新解析')
+  await loadDocuments()
+}
+
 async function openJobs(document: DocumentDto) {
   jobs.value = await kbApi.listIngestionJobs(document.id)
   jobsVisible.value = true
@@ -161,7 +191,12 @@ function statusTag(status: string) {
   if (status === 'READY') return 'success'
   if (status === 'FAILED') return 'danger'
   if (status === 'UPLOADED') return 'info'
+  if (status === 'EMBEDDING') return 'success'
   return 'warning'
+}
+
+function isProcessing(status: string) {
+  return status === 'PARSING' || status === 'CHUNKING'
 }
 
 function formatBytes(value: number) {
@@ -190,6 +225,10 @@ function formatTime(value: string | null) {
   display: inline-block;
   max-width: 100%;
   overflow-wrap: anywhere;
+}
+
+.expanded-row {
+  padding: 12px 28px;
 }
 
 .job-row {

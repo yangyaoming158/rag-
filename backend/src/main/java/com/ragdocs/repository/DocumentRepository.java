@@ -37,6 +37,16 @@ public class DocumentRepository {
         return jdbcTemplate.query(sql, this::mapDocument, kbId, sha256).stream().findFirst();
     }
 
+    public Optional<Document> findById(long id) {
+        String sql = """
+                SELECT id, kb_id, original_filename, content_type, file_size, storage_path, sha256,
+                       status, error_message, chunk_count, created_at, updated_at
+                FROM documents
+                WHERE id = ?
+                """;
+        return jdbcTemplate.query(sql, this::mapDocument, id).stream().findFirst();
+    }
+
     public Optional<Document> findByIdAndOwner(long id, long ownerId) {
         String sql = """
                 SELECT d.id, d.kb_id, d.original_filename, d.content_type, d.file_size, d.storage_path,
@@ -83,6 +93,30 @@ public class DocumentRepository {
 
     public void updateStoragePath(long id, String storagePath) {
         jdbcTemplate.update("UPDATE documents SET storage_path = ?, updated_at = now() WHERE id = ?", storagePath, id);
+    }
+
+    public void updateStatus(long id, String status, String errorMessage) {
+        jdbcTemplate.update("""
+                UPDATE documents
+                SET status = ?, error_message = ?, updated_at = now()
+                WHERE id = ?
+                """, status, errorMessage, id);
+    }
+
+    public void markChunked(long id, int chunkCount) {
+        jdbcTemplate.update("""
+                UPDATE documents
+                SET status = 'EMBEDDING', error_message = NULL, chunk_count = ?, updated_at = now()
+                WHERE id = ?
+                """, chunkCount, id);
+    }
+
+    public void resetForReingest(long id) {
+        jdbcTemplate.update("""
+                UPDATE documents
+                SET status = 'UPLOADED', error_message = NULL, chunk_count = 0, updated_at = now()
+                WHERE id = ?
+                """, id);
     }
 
     public int deleteByIdAndOwner(long id, long ownerId) {

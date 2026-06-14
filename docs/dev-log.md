@@ -109,3 +109,28 @@
 - 遗留：
   - 前端依赖审计仍提示 3 个 high severity vulnerabilities，未在 Phase 1 范围内处理。
   - 下一步进入 Phase 2 前，需先创建 `docs/plans/phase-2.md`，并按规划由 Opus 负责切块算法实现与单测。
+
+## 2026-06-14 — Phase 2 文档解析与切块入库
+
+- 做了什么：
+  - 从 `main` 切出 `phase-2`，创建 `docs/plans/phase-2.md`，明确解析、切块、异步 ingestion、重跑、前端状态展示任务卡。
+  - 后端新增 Tika/PDFBox 依赖、`DocumentParser`、`DefaultDocumentParser`、`TextCleaner`，支持 Markdown/TXT/PDF 解析；PDF 逐页抽取并保留页码。
+  - 后端新增 `DocumentChunker`，按规划参数实现 Markdown heading_path、短节合并、长段拆分、120 字重叠、TXT/PDF 段落累积。
+  - 后端新增 `DocumentChunkRepository` 与 `IngestionWorker`，上传后异步执行 PARSE/CHUNK job，成功后写入 `document_chunks` 并把文档置为 `EMBEDDING`。
+  - 后端新增 `POST /api/documents/{id}/reingest`，重跑前清空旧 chunks、重置状态并重新创建 PARSE job。
+  - 前端详情页新增 FAILED 展开原因、任务抽屉继续展示 job 错误、重新解析按钮。
+  - 针对 README 实测暴露的 chunk 尾块边界问题，补充短块重平衡、长段尾块回归单测，移除正则分段导致的栈溢出风险。
+- 没做什么：
+  - 未实现 embedding、向量写入、检索、问答、READY 状态、docx、OCR、表格结构化、图片提取。
+  - 未引入 Redis、MQ、独立向量库或额外服务容器。
+- 验证：
+  - `backend`: `mvn test` 通过，14 个测试。
+  - `frontend`: `npm run build` 通过；仍有 Element Plus 大 chunk 警告。
+  - `docker compose build --pull=false backend && docker compose up -d backend` 通过；三容器继续运行。
+  - Phase 2 Gate：mini-mall `README.md` 入库 19 chunks，长度 200-942；`docs/architecture.md` 入库 10 chunks，长度 265-900；临时 PDF 入库 10 chunks，长度 229-900。
+  - `architecture.md` heading_path 抽查 10/10 可读并符合章节路径，如 `Architecture > Module Responsibilities`、`Architecture > Request Flow`。
+  - 损坏 PDF 返回 `FAILED: PDF 解析失败: Error: End-of-File...`。
+  - 对 README 触发 `POST /api/documents/{id}/reingest` 返回 code 0，重跑前后 chunk 数均为 19，未产生重复 chunk。
+- 遗留：
+  - 当前文档成功处理后停在 `EMBEDDING`，Phase 3 负责调用 embedding provider、写入 `document_chunks.embedding` 并把文档置为 `READY`。
+  - 前端依赖审计与 Element Plus 大 chunk 警告仍按前述结论延后处理。

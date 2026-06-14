@@ -7,6 +7,8 @@ public interface StorageService {
 
     String store(long kbId, long documentId, String extension, InputStream inputStream) throws IOException;
 
+    InputStream load(String storagePath) throws IOException;
+
     void delete(String storagePath) throws IOException;
 
     void deleteKnowledgeBase(long kbId) throws IOException;
