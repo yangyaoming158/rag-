@@ -31,6 +31,11 @@ public class LocalStorageService implements StorageService {
     }
 
     @Override
+    public InputStream load(String storagePath) throws IOException {
+        return Files.newInputStream(resolve(storagePath));
+    }
+
+    @Override
     public void delete(String storagePath) throws IOException {
         if (storagePath == null || storagePath.isBlank()) {
             return;

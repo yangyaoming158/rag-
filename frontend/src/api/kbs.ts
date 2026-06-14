@@ -77,6 +77,11 @@ export async function deleteDocument(id: number) {
   await http.delete<ApiResponse<null>>(`/api/documents/${id}`)
 }
 
+export async function reingestDocument(id: number) {
+  const response = await http.post<ApiResponse<DocumentDto>>(`/api/documents/${id}/reingest`)
+  return response.data.data
+}
+
 export async function listIngestionJobs(id: number) {
   const response = await http.get<ApiResponse<JobDto[]>>(`/api/documents/${id}/ingestion`)
   return response.data.data

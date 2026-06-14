@@ -4,7 +4,7 @@
 > 规则：一个 Phase 的全部 Gate 通过、且跑过全量测试 + Compose 冷启动后，才把状态改为 ✅ 并填完成日期。
 > Gate 不过保持 ⬜ 并在「备注」记原因；上一个 Phase 未 ✅，下一个不许开工。
 
-最近更新：2026-06-13（Phase 1 验收通过）
+最近更新：2026-06-14（Phase 2 验收通过）
 
 ## 阶段总览
 
@@ -13,7 +13,7 @@
 | 前置 | mini-mall Phase 3 收尾验收 | ✅ | 2026-06-13 | — | 本地证据：mini-mall `phase3-ai-inventory-assistant` TaskMaster 14/14 done，`docs/phase3-acceptance.md` 记录验收通过 |
 | 0 | 初始化：3 容器 Compose + Flyway V1 + 前后端骨架 | ✅ | 2026-06-13 | docs/plans/phase-0.md | 三容器 healthy；登录拿 token；`document_chunks.embedding vector(1024)` 与 HNSW 索引已验收 |
 | 1 | KB CRUD + 上传落盘 + 文档列表/状态/删除 | ✅ | 2026-06-13 | docs/plans/phase-1.md | `.exe` 422；重复文件 409；删除 KB 后磁盘文件已清理；前端列表/详情/上传/删除可用 |
-| 2 | 解析 + 切块入库（无向量），失败路径完整 | ⬜ | — | docs/plans/phase-2.md | 全项目最难阶段之一 |
+| 2 | 解析 + 切块入库（无向量），失败路径完整 | ✅ | 2026-06-14 | docs/plans/phase-2.md | README / architecture / PDF 三件套入库；chunk 长度 200-1000；坏 PDF FAILED；重跑不重复 chunk |
 | 3 | Embedding + 向量检索 + 检索调试页 + 标定阈值 | ⬜ | — | docs/plans/phase-3.md | |
 | 4 | RAG 问答闭环 + 引用 + 无答案 + 历史 + 调用日志 | ⬜ | — | docs/plans/phase-4.md | 核心阶段 |
 | 5 | 后台三页补齐 + 统计卡片（展示版） | ⬜ | — | docs/plans/phase-5.md | |
@@ -38,10 +38,10 @@
 - [x] 前端全交互可用 + 校验逻辑有单测
 
 ### Phase 2
-- [ ] 三件套（README.md / architecture.md / 一份 PDF）入库，chunk 长度全在 [200,1000] 字
-- [ ] heading_path 人工抽查 ≥9/10 正确
-- [ ] 损坏 PDF 显示 FAILED + 可读原因
-- [ ] 同文档重跑不产生重复 chunk
+- [x] 三件套（README.md / architecture.md / 一份 PDF）入库，chunk 长度全在 [200,1000] 字
+- [x] heading_path 人工抽查 ≥9/10 正确
+- [x] 损坏 PDF 显示 FAILED + 可读原因
+- [x] 同文档重跑不产生重复 chunk
 
 ### Phase 3
 - [ ] 10 个标准 query top1 命中预期文档 ≥8/10（记入 `docs/eval/retrieval.md`）

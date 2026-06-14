@@ -4,6 +4,8 @@ import com.ragdocs.common.BusinessException;
 import com.ragdocs.common.ErrorCode;
 import com.ragdocs.domain.Document;
 import com.ragdocs.domain.IngestionJob;
+import com.ragdocs.ingestion.IngestionWorker;
+import com.ragdocs.repository.DocumentChunkRepository;
 import com.ragdocs.repository.DocumentRepository;
 import com.ragdocs.repository.IngestionJobRepository;
 import com.ragdocs.repository.KnowledgeBaseRepository;
@@ -13,6 +15,8 @@ import com.ragdocs.web.dto.PageResponse;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -31,22 +35,28 @@ public class DocumentService {
 
     private final KnowledgeBaseRepository knowledgeBaseRepository;
     private final DocumentRepository documentRepository;
+    private final DocumentChunkRepository documentChunkRepository;
     private final IngestionJobRepository ingestionJobRepository;
     private final DocumentFileValidator fileValidator;
     private final StorageService storageService;
+    private final IngestionWorker ingestionWorker;
 
     public DocumentService(
             KnowledgeBaseRepository knowledgeBaseRepository,
             DocumentRepository documentRepository,
+            DocumentChunkRepository documentChunkRepository,
             IngestionJobRepository ingestionJobRepository,
             DocumentFileValidator fileValidator,
-            StorageService storageService
+            StorageService storageService,
+            IngestionWorker ingestionWorker
     ) {
         this.knowledgeBaseRepository = knowledgeBaseRepository;
         this.documentRepository = documentRepository;
+        this.documentChunkRepository = documentChunkRepository;
         this.ingestionJobRepository = ingestionJobRepository;
         this.fileValidator = fileValidator;
         this.storageService = storageService;
+        this.ingestionWorker = ingestionWorker;
     }
 
     @Transactional
@@ -76,6 +86,7 @@ public class DocumentService {
             storagePath = storageService.store(kbId, document.id(), upload.extension(), inputStream);
             documentRepository.updateStoragePath(document.id(), storagePath);
             IngestionJob job = ingestionJobRepository.createParseJob(document.id());
+            enqueueAfterCommit(document.id());
             return toDto(document, job.id());
         } catch (IOException ex) {
             cleanup(storagePath);
@@ -122,6 +133,22 @@ public class DocumentService {
                 .toList();
     }
 
+    @Transactional
+    public DocumentDto reingest(long ownerId, long documentId) {
+        Document document = documentRepository.findByIdAndOwner(documentId, ownerId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "文档不存在"));
+        if (ingestionJobRepository.hasRunningJob(document.id())
+                || Set.of("PARSING", "CHUNKING").contains(document.status())) {
+            throw new BusinessException(ErrorCode.CONFLICT, "文档正在处理，不能重复触发");
+        }
+        documentChunkRepository.deleteByDocumentId(document.id());
+        documentRepository.resetForReingest(document.id());
+        IngestionJob job = ingestionJobRepository.createParseJob(document.id());
+        enqueueAfterCommit(document.id());
+        Document reset = documentRepository.findById(document.id()).orElse(document);
+        return toDto(reset, job.id());
+    }
+
     private void ensureKbOwner(long ownerId, long kbId) {
         knowledgeBaseRepository.findByIdAndOwner(kbId, ownerId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "知识库不存在"));
@@ -160,6 +187,19 @@ public class DocumentService {
         } catch (IOException ignored) {
             // Primary failure is reported to the caller; cleanup best effort only.
         }
+    }
+
+    private void enqueueAfterCommit(long documentId) {
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    ingestionWorker.process(documentId);
+                }
+            });
+            return;
+        }
+        ingestionWorker.process(documentId);
     }
 
     private DocumentDto toDto(Document document, Long jobId) {
