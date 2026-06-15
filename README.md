@@ -2,7 +2,7 @@
 
 DevDocs RAG 是一个 Spring Boot 单体 + Vue 3 的项目文档智能问答系统。目标链路是上传工程文档，解析切块，向量化入 pgvector，再提供带引用溯源的检索问答。
 
-当前状态：Phase 3 已完成。已包含三容器 Compose 目标、后端登录/健康检查、Flyway V1 表结构、知识库 CRUD、文档上传落盘、文档列表/状态/删除、异步解析、标题感知切块入库、Mock/OpenAI 兼容 embedding、pgvector 检索、检索调试页、失败原因展示、重新解析，以及前端知识库列表与详情页。RAG 问答将在后续 Phase 实现。
+当前状态：Phase 4 已完成。已包含三容器 Compose 目标、后端登录/健康检查、Flyway V1 表结构、知识库 CRUD、文档上传落盘、文档列表/状态/删除、异步解析、标题感知切块入库、Mock/OpenAI 兼容 embedding、pgvector 检索、检索调试页、RAG 问答、引用溯源、无答案短路、历史回看、失败原因展示、重新解析，以及前端知识库列表、详情页和聊天页。
 
 ## 快速开始
 
@@ -66,6 +66,17 @@ docker compose exec postgres psql -U rag_user -d devdocs_rag -c '\d document_chu
 - `POST /api/kbs/{kbId}/retrieval/debug` 按 KB 隔离返回 topK chunk、分数、来源与预览。
 - 知识库详情页提供“检索调试”区域；当前不调用 LLM。
 - Mock 模式下 mini-mall 8 份文档 10 query top1 命中 8/10，结果见 `docs/eval/retrieval.md`。
+
+## Phase 4 可用能力
+
+- `POST /api/conversations` 创建会话，`POST /api/conversations/{id}/messages` 同步问答。
+- RAG 流程包含问题 embedding、top-8 检索、阈值短路、top-6 prompt、ChatProvider、引用解析、citations 落库。
+- top1 分数低于阈值时直接返回 `NO_ANSWER`，不调用 LLM。
+- 默认 `mock-chat` 可离线回答并生成合法 `[n]` 引用；真实 ChatProvider 走 OpenAI 兼容 `/chat/completions`。
+- Chat 调用写入 `model_call_logs`；缺 key 等失败返回 `50201` 并写 ERROR 日志。
+- 历史回看保留引用快照；文档删除后引用仍可读。
+- 前端新增知识库问答页，展示消息状态和引用卡片。
+- Mock 模式 25 题评测：库内 19/20 有引用回答，库外 5/5 `NO_ANSWER`，结果见 `docs/eval/questions.md`。
 
 ## 架构
 

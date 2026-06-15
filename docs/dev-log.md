@@ -161,3 +161,29 @@
 - 遗留：
   - `docs/eval/retrieval.md` 当前是 Mock provider 基线；接入真实 embedding provider 后必须复测并重新标定阈值。
   - 前端依赖审计与 Element Plus 大 chunk 警告继续延后处理。
+
+## 2026-06-15 — Phase 4 RAG 问答闭环
+
+- 做了什么：
+  - 创建 `docs/plans/phase-4.md`，按 ChatProvider、PromptBuilder、引用解析、会话/消息 API、前端聊天页和 25 题评测拆任务卡。
+  - 新增 `ChatProvider`、`MockChatProvider`、`OpenAiCompatibleChatProvider`；默认 `mock-chat` 离线可跑，真实 provider 走 OpenAI 兼容 `/chat/completions`。
+  - 新增版本化 prompt 模板 `prompts/rag-answer-v1.txt`，强制仅依据参考资料回答、每个论断标 `[n]`、资料不足固定拒答。
+  - 新增 `PromptBuilder` 与 `CitationParser`，覆盖 top-6 context、6000 字预算、最近 3 轮历史、非法引用丢弃、无引用 `UNGROUNDED`。
+  - 新增 `ConversationRepository`、`MessageRepository`、`CitationRepository`，实现会话、消息、引用快照持久化。
+  - 新增 `/api/conversations` 系列 API：创建会话、列表、详情、同步提问；提问流程包含 embedding、检索阈值短路、Chat 调用、引用落库和历史回看。
+  - 扩展 `model_call_logs` 写 CHAT 调用，成功/失败均记录 provider、model、token、latency 和 error。
+  - 前端新增 `ChatView.vue` 与 `frontend/src/api/conversations.ts`，KB 详情页新增问答入口；聊天页展示会话列表、消息状态和引用卡片。
+  - 建立 `docs/eval/questions.md`，用 mini-mall 8 份文档的 KB 跑 20 道库内题 + 5 道库外题。
+- 没做什么：
+  - 未实现 SSE 流式、Agent、后台模型日志页、统计卡片、rerank、hybrid 检索、跨库联检、缓存。
+  - 未接真实 DeepSeek/SiliconFlow/DashScope key；当前评测是 Mock provider 离线基线。
+- 验证：
+  - `backend`: `mvn test` 通过，22 个测试。
+  - `frontend`: `npm run build` 通过；仍有 Element Plus 大 chunk 警告。
+  - `docker compose build --pull=false backend && docker compose up -d backend` 通过；仅 backend/postgres 运行，frontend 未启动。
+  - API smoke：库内问题返回 `OK` 且 2 条引用；库外问题返回 `NO_ANSWER`；`GET /api/conversations/{id}` 历史回看引用完整。
+  - 拔 key 演示：临时设置 `RAG_AI_CHAT_PROVIDER=openai` 且空 key，问答返回 `50201`，`model_call_logs` 记录 `CHAT|ERROR|openai|mock-chat|Chat api-key 未配置`。
+  - 25 题评测：库内 19/20 有引用回答；库外 5/5 `NO_ANSWER`。
+- 遗留：
+  - `docs/eval/questions.md` 当前是 Mock provider 基线；真实 Chat/Embedding provider 接入后必须复测。
+  - 前端依赖审计与 Element Plus 大 chunk 警告继续延后处理。

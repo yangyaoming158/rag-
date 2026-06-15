@@ -1,8 +1,11 @@
 package com.ragdocs.config;
 
 import com.ragdocs.auth.JwtProperties;
+import com.ragdocs.provider.ChatProvider;
 import com.ragdocs.provider.EmbeddingProvider;
+import com.ragdocs.provider.MockChatProvider;
 import com.ragdocs.provider.MockEmbeddingProvider;
+import com.ragdocs.provider.OpenAiCompatibleChatProvider;
 import com.ragdocs.provider.OpenAiCompatibleEmbeddingProvider;
 import com.ragdocs.service.StorageProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -37,5 +40,14 @@ public class AppConfiguration {
             return new MockEmbeddingProvider(embedding.dimensions(), embedding.model());
         }
         return new OpenAiCompatibleEmbeddingProvider(embedding, objectMapper);
+    }
+
+    @Bean
+    public ChatProvider chatProvider(AiProperties properties, ObjectMapper objectMapper) {
+        AiProperties.Chat chat = properties.chat();
+        if ("mock".equalsIgnoreCase(chat.provider())) {
+            return new MockChatProvider(chat.model());
+        }
+        return new OpenAiCompatibleChatProvider(chat, objectMapper);
     }
 }

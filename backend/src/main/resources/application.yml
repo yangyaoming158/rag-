@@ -37,6 +37,7 @@ rag:
       base-url: ${RAG_AI_CHAT_BASE_URL:}
       api-key: ${RAG_AI_CHAT_API_KEY:}
       model: ${RAG_AI_CHAT_MODEL:mock-chat}
+      temperature: ${RAG_AI_CHAT_TEMPERATURE:0.2}
     embedding:
       provider: ${RAG_AI_EMBEDDING_PROVIDER:mock}
       base-url: ${RAG_AI_EMBEDDING_BASE_URL:}
