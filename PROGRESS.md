@@ -4,7 +4,7 @@
 > 规则：一个 Phase 的全部 Gate 通过、且跑过全量测试 + Compose 冷启动后，才把状态改为 ✅ 并填完成日期。
 > Gate 不过保持 ⬜ 并在「备注」记原因；上一个 Phase 未 ✅，下一个不许开工。
 
-最近更新：2026-06-15（Phase 4 验收通过）
+最近更新：2026-06-15（Phase 5 验收通过）
 
 ## 阶段总览
 
@@ -16,7 +16,7 @@
 | 2 | 解析 + 切块入库（无向量），失败路径完整 | ✅ | 2026-06-14 | docs/plans/phase-2.md | README / architecture / PDF 三件套入库；chunk 长度 200-1000；坏 PDF FAILED；重跑不重复 chunk |
 | 3 | Embedding + 向量检索 + 检索调试页 + 标定阈值 | ✅ | 2026-06-14 | docs/plans/phase-3.md | Mock 模式 mini-mall 10 query top1 命中 8/10；KB 隔离测试通过；默认阈值标定为 0.35 |
 | 4 | RAG 问答闭环 + 引用 + 无答案 + 历史 + 调用日志 | ✅ | 2026-06-15 | docs/plans/phase-4.md | Mock 模式 25 题评测：库内 19/20 有引用回答，库外 5/5 NO_ANSWER；拔 key 返回 50201 且日志可查 |
-| 5 | 后台三页补齐 + 统计卡片（展示版） | ⬜ | — | docs/plans/phase-5.md | |
+| 5 | 后台三页补齐 + 统计卡片（展示版） | ✅ | 2026-06-15 | docs/plans/phase-5.md | 后台 ingestion/model/retrieval/overview 可用；可恢复失败文档经后台定位后重跑 READY |
 | 6 | Agent 增强 | ⏭️ 默认跳过 | — | — | 仅 0–5+7 完成且 ≥1 周富余才做 |
 | 7 | 演示 / README / 简历包装 | ⬜ | — | docs/plans/phase-7.md | 不可裁剪 |
 
@@ -55,7 +55,7 @@
 - [x] 评测结果记入 `docs/eval/questions.md`
 
 ### Phase 5
-- [ ] 「上传坏文件 → 后台定位失败原因 → 重跑成功」一镜到底
+- [x] 「上传坏文件 → 后台定位失败原因 → 重跑成功」一镜到底
 
 ### Phase 7
 - [ ] 干净机器（或删 volume）按 README 三命令冷启动成功

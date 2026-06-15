@@ -187,3 +187,29 @@
 - 遗留：
   - `docs/eval/questions.md` 当前是 Mock provider 基线；真实 Chat/Embedding provider 接入后必须复测。
   - 前端依赖审计与 Element Plus 大 chunk 警告继续延后处理。
+
+## 2026-06-15 — Phase 5 后台管理与可观测性
+
+- 做了什么：
+  - 创建 `docs/plans/phase-5.md`，按后台查询 API、后台页、失败排查/重跑链路和阶段收尾拆任务卡。
+  - 新增 `AdminController` 与后台 DTO，补齐 `GET /api/admin/ingestion-jobs`、`GET /api/admin/model-calls`、`POST /api/admin/retrieval-debug`、`GET /api/admin/stats/overview`。
+  - 扩展 `IngestionJobRepository` 和 `ModelCallLogRepository`，支持后台分页、状态过滤、类型过滤，并在 ingestion 日志中关联 KB 名称、文档名和文档状态。
+  - 新增 `AdminStatsRepository`，从现有表聚合知识库数、文档数、chunk 数、token 总量和平均延迟；未新增监控或审计表。
+  - 前端新增 `frontend/src/api/admin.ts` 与 `AdminView.vue`，`/admin` 页面包含概览、Ingestion 日志、模型调用日志、检索调试四个 tab。
+  - 首页和 KB 详情页新增后台入口；后台失败日志可跳转到文档详情，详情页会按 `documentId` 定位并打开任务抽屉。
+  - Ingestion 失败行支持展开错误原因，并可对非处理中状态触发重新解析。
+- 没做什么：
+  - 未引入 Prometheus/Grafana、链路追踪、告警、RBAC、audit_logs 或复杂图表库。
+  - 未启动前端容器；本轮只重建并重启了 backend 容器用于接口验证。
+  - 未进入 Phase 6，也未做 Phase 7 演示包装。
+- 验证：
+  - `backend`: `mvn test` 通过，22 个测试。
+  - `frontend`: `npm run build` 通过；仍有 VueUse PURE 注释和 Element Plus 大 chunk 警告。
+  - `git diff --check` 通过。
+  - `docker compose build --pull=false backend && docker compose up -d backend` 通过；最终仅 backend/postgres 运行，frontend 未启动。
+  - Admin API smoke：`/api/admin/stats/overview`、`/api/admin/ingestion-jobs`、`/api/admin/model-calls`、`/api/admin/retrieval-debug` 均返回 HTTP 200 / code 0。
+  - Gate 验收：临时将 embedding provider 指向无效 endpoint，上传有效 Markdown 后文档在 `EMBED` 阶段 `FAILED`，后台日志可见错误；恢复默认 Mock 后对同一文档重跑，状态变为 `READY`，chunkCount=6，最新任务为 `EMBED/SUCCEEDED`。
+- 遗留：
+  - 真正损坏、不可解析或少于 100 字的文件重跑仍会失败，这是正确行为；Phase 5 Gate 使用的是“可恢复处理失败”场景，不应把不可恢复坏文件伪装成成功。
+  - 展示版统计卡片只做库内聚合数字，不代表生产监控；真实 token 价格估算与图表化留到演示包装或后续扩展。
+  - 前端依赖审计与大 chunk 警告继续延后处理。

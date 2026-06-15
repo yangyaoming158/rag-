@@ -8,6 +8,7 @@
       </div>
       <div class="toolbar">
         <el-button :icon="Refresh" :loading="loading" @click="loadDocuments">刷新</el-button>
+        <el-button :icon="DataAnalysis" @click="router.push({ name: 'admin' })">后台</el-button>
         <el-button :icon="Search" @click="router.push({ name: 'kb-chat', params: { id: kbId } })">问答</el-button>
         <el-upload
           :http-request="uploadFile"
@@ -21,7 +22,13 @@
     </header>
 
     <section class="page-content">
-      <el-table :data="documents" v-loading="loading" class="data-table" row-key="id">
+      <el-table
+        :data="documents"
+        v-loading="loading"
+        class="data-table"
+        row-key="id"
+        :row-class-name="documentRowClass"
+      >
         <el-table-column type="expand" width="44">
           <template #default="{ row }">
             <div class="expanded-row">
@@ -149,7 +156,7 @@
 </template>
 
 <script setup lang="ts">
-import { ArrowLeft, Delete, Refresh, RefreshRight, Search, Tickets, Upload } from '@element-plus/icons-vue'
+import { ArrowLeft, DataAnalysis, Delete, Refresh, RefreshRight, Search, Tickets, Upload } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox, type UploadRequestOptions } from 'element-plus'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -170,6 +177,8 @@ const retrievalTopK = ref(8)
 const retrievalLoading = ref(false)
 const retrievalResult = ref<RetrievalDebugResponse | null>(null)
 const page = ref({ page: 0, size: 20, totalElements: 0 })
+const focusedDocumentId = ref(Number(route.query.documentId) || null)
+const focusedOpened = ref(false)
 let timer: number | undefined
 
 const currentKb = computed(() => kbs.value.find((kb) => kb.id === kbId))
@@ -197,6 +206,7 @@ async function loadDocuments() {
       size: result.size,
       totalElements: result.totalElements
     }
+    await focusDocumentFromQuery()
   } finally {
     loading.value = false
   }
@@ -241,6 +251,19 @@ async function confirmReingest(document: DocumentDto) {
 async function openJobs(document: DocumentDto) {
   jobs.value = await kbApi.listIngestionJobs(document.id)
   jobsVisible.value = true
+}
+
+async function focusDocumentFromQuery() {
+  if (!focusedDocumentId.value || focusedOpened.value) {
+    return
+  }
+  const document = documents.value.find((item) => item.id === focusedDocumentId.value)
+  if (!document) {
+    return
+  }
+  focusedOpened.value = true
+  ElMessage.info(`已定位「${document.originalFilename}」`)
+  await openJobs(document)
 }
 
 async function runRetrievalDebug() {
@@ -295,6 +318,10 @@ function formatTime(value: string | null) {
 
 function formatScore(value: number) {
   return value.toFixed(3)
+}
+
+function documentRowClass({ row }: { row: DocumentDto }) {
+  return row.id === focusedDocumentId.value ? 'focused-document-row' : ''
 }
 </script>
 
@@ -371,5 +398,9 @@ function formatScore(value: number) {
   line-height: 1.55;
   margin: 0;
   overflow-wrap: anywhere;
+}
+
+:deep(.focused-document-row) {
+  --el-table-tr-bg-color: #eff6ff;
 }
 </style>

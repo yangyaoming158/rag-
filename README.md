@@ -2,7 +2,7 @@
 
 DevDocs RAG 是一个 Spring Boot 单体 + Vue 3 的项目文档智能问答系统。目标链路是上传工程文档，解析切块，向量化入 pgvector，再提供带引用溯源的检索问答。
 
-当前状态：Phase 4 已完成。已包含三容器 Compose 目标、后端登录/健康检查、Flyway V1 表结构、知识库 CRUD、文档上传落盘、文档列表/状态/删除、异步解析、标题感知切块入库、Mock/OpenAI 兼容 embedding、pgvector 检索、检索调试页、RAG 问答、引用溯源、无答案短路、历史回看、失败原因展示、重新解析，以及前端知识库列表、详情页和聊天页。
+当前状态：Phase 5 已完成。已包含三容器 Compose 目标、后端登录/健康检查、Flyway V1 表结构、知识库 CRUD、文档上传落盘、文档列表/状态/删除、异步解析、标题感知切块入库、Mock/OpenAI 兼容 embedding、pgvector 检索、检索调试页、RAG 问答、引用溯源、无答案短路、历史回看、失败原因展示、重新解析、后台 ingestion 日志、模型调用日志、后台检索调试和展示版统计卡片，以及前端知识库列表、详情页、聊天页和后台页。
 
 ## 快速开始
 
@@ -77,6 +77,15 @@ docker compose exec postgres psql -U rag_user -d devdocs_rag -c '\d document_chu
 - 历史回看保留引用快照；文档删除后引用仍可读。
 - 前端新增知识库问答页，展示消息状态和引用卡片。
 - Mock 模式 25 题评测：库内 19/20 有引用回答，库外 5/5 `NO_ANSWER`，结果见 `docs/eval/questions.md`。
+
+## Phase 5 可用能力
+
+- 新增 `/api/admin/ingestion-jobs`，按状态分页查看 ingestion 任务，包含 KB、文档、阶段、状态、attempt、错误原因和时间。
+- 新增 `/api/admin/model-calls`，按类型/状态分页查看模型调用日志，展示 provider、model、token、延迟、状态和错误。
+- 新增 `/api/admin/stats/overview`，返回知识库数、文档数、chunk 数、token 总量和平均延迟。
+- 新增 `/api/admin/retrieval-debug`，后台可选择知识库直接查看 topK chunk、分数条、来源和预览。
+- 前端新增 `/admin` 后台页，包含概览、Ingestion 日志、模型调用日志、检索调试四个 tab。
+- Ingestion 失败行可展开错误原因，跳转到文档详情，并对可恢复失败执行重新解析。
 
 ## 架构
 
