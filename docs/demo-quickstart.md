@@ -71,7 +71,7 @@ mini-mall 项目文档
 
 ## 3. 体验检索调试
 
-在知识库详情页下方“检索调试”输入：
+检索调试不在首页的知识库卡片列表页。先在某个知识库卡片底部点击“打开”，进入知识库详情页；在文档表格下方找到“检索调试”，输入：
 
 ```text
 gateway JWT trusted headers CORS rate limiting
