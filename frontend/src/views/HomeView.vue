@@ -7,6 +7,7 @@
       </div>
       <div class="toolbar">
         <el-button :icon="Refresh" :loading="loading" @click="loadKbs">刷新</el-button>
+        <el-button :icon="DataAnalysis" @click="router.push({ name: 'admin' })">后台</el-button>
         <el-button type="primary" :icon="Plus" @click="createDialogVisible = true">新建</el-button>
         <el-button @click="logout">退出</el-button>
       </div>
@@ -55,7 +56,7 @@
 </template>
 
 <script setup lang="ts">
-import { Delete, FolderOpened, Plus, Refresh } from '@element-plus/icons-vue'
+import { DataAnalysis, Delete, FolderOpened, Plus, Refresh } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import { onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'

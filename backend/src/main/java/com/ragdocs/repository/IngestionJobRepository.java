@@ -6,6 +6,7 @@ import org.springframework.stereotype.Repository;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -72,6 +73,50 @@ public class IngestionJobRepository {
         return jdbcTemplate.query(sql, this::mapJob, documentId);
     }
 
+    public List<AdminIngestionJobRow> findAdminJobs(String status, int page, int size) {
+        int offset = page * size;
+        if (status == null || status.isBlank()) {
+            String sql = """
+                    SELECT j.id, j.document_id, d.original_filename AS document_filename,
+                           d.status AS document_status, kb.id AS kb_id, kb.name AS kb_name,
+                           j.phase, j.status, j.attempt, j.max_attempt, j.error_message,
+                           j.started_at, j.finished_at, j.created_at
+                    FROM ingestion_jobs j
+                    JOIN documents d ON d.id = j.document_id
+                    JOIN knowledge_bases kb ON kb.id = d.kb_id
+                    ORDER BY j.created_at DESC, j.id DESC
+                    LIMIT ? OFFSET ?
+                    """;
+            return jdbcTemplate.query(sql, this::mapAdminRow, size, offset);
+        }
+        String sql = """
+                SELECT j.id, j.document_id, d.original_filename AS document_filename,
+                       d.status AS document_status, kb.id AS kb_id, kb.name AS kb_name,
+                       j.phase, j.status, j.attempt, j.max_attempt, j.error_message,
+                       j.started_at, j.finished_at, j.created_at
+                FROM ingestion_jobs j
+                JOIN documents d ON d.id = j.document_id
+                JOIN knowledge_bases kb ON kb.id = d.kb_id
+                WHERE j.status = ?
+                ORDER BY j.created_at DESC, j.id DESC
+                LIMIT ? OFFSET ?
+                """;
+        return jdbcTemplate.query(sql, this::mapAdminRow, status, size, offset);
+    }
+
+    public long countAdminJobs(String status) {
+        if (status == null || status.isBlank()) {
+            Long count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM ingestion_jobs", Long.class);
+            return count == null ? 0 : count;
+        }
+        Long count = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM ingestion_jobs WHERE status = ?",
+                Long.class,
+                status
+        );
+        return count == null ? 0 : count;
+    }
+
     public Optional<IngestionJob> findLatestPending(long documentId, String phase) {
         String sql = """
                 SELECT id, document_id, phase, status, attempt, max_attempt, error_message,
@@ -114,5 +159,42 @@ public class IngestionJobRepository {
                 rs.getObject("finished_at", java.time.OffsetDateTime.class),
                 rs.getObject("created_at", java.time.OffsetDateTime.class)
         );
+    }
+
+    private AdminIngestionJobRow mapAdminRow(ResultSet rs, int rowNum) throws SQLException {
+        return new AdminIngestionJobRow(
+                rs.getLong("id"),
+                rs.getLong("document_id"),
+                rs.getString("document_filename"),
+                rs.getString("document_status"),
+                rs.getLong("kb_id"),
+                rs.getString("kb_name"),
+                rs.getString("phase"),
+                rs.getString("status"),
+                rs.getInt("attempt"),
+                rs.getInt("max_attempt"),
+                rs.getString("error_message"),
+                rs.getObject("started_at", OffsetDateTime.class),
+                rs.getObject("finished_at", OffsetDateTime.class),
+                rs.getObject("created_at", OffsetDateTime.class)
+        );
+    }
+
+    public record AdminIngestionJobRow(
+            long id,
+            long documentId,
+            String documentFilename,
+            String documentStatus,
+            long kbId,
+            String kbName,
+            String phase,
+            String status,
+            int attempt,
+            int maxAttempt,
+            String errorMessage,
+            OffsetDateTime startedAt,
+            OffsetDateTime finishedAt,
+            OffsetDateTime createdAt
+    ) {
     }
 }
