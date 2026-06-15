@@ -27,6 +27,23 @@ public class ModelCallLogRepository {
                 """, provider, model, documentId, promptTokens, latencyMs, status, truncate(errorMessage));
     }
 
+    public void recordChat(
+            Long messageId,
+            String provider,
+            String model,
+            int promptTokens,
+            int completionTokens,
+            long latencyMs,
+            String status,
+            String errorMessage
+    ) {
+        jdbcTemplate.update("""
+                INSERT INTO model_call_logs
+                    (call_type, provider, model, message_id, prompt_tokens, completion_tokens, latency_ms, status, error_message)
+                VALUES ('CHAT', ?, ?, ?, ?, ?, ?, ?, ?)
+                """, provider, model, messageId, promptTokens, completionTokens, latencyMs, status, truncate(errorMessage));
+    }
+
     private String truncate(String message) {
         if (message == null) {
             return null;
