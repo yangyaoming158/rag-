@@ -221,6 +221,7 @@
   - 重写 `README.md` 为最终交付结构，包含核心特性、快速开始、架构、RAG 流程、页面、API 摘要、关键取舍、评测、演示材料和 Roadmap。
   - 新增 `docs/architecture.md`，使用 Mermaid 记录运行时架构、数据关系、ingestion 状态机、检索 SQL、问答时序和 Provider 配置。
   - 新增 `docs/demo-script.md`，整理 5 分钟演示时间线、推荐问题、失败演示方式、录屏检查表和备用方案。
+  - 新增 `docs/demo-quickstart.md`，整理首次打开前端后的完整功能测试路线、推荐上传文档、问题样例、后台检查点和失败路径预期。
   - 新增 `docs/demo-corpus.md`，定稿 mini-mall 8 份推荐演示语料和问题映射。
   - 新增 `docs/interview-qna.md`，整理简历描述、常见追问、不可夸大点和可翻代码位置。
   - 更新 `PROGRESS.md`，将 Phase 7 标为进行中，未误标 Gate 通过。

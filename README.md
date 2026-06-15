@@ -135,6 +135,7 @@ UPLOAD -> PARSE -> CHUNK -> EMBED -> READY
 
 ## 演示材料
 
+- 快速体验：[docs/demo-quickstart.md](docs/demo-quickstart.md)
 - 演示脚本：[docs/demo-script.md](docs/demo-script.md)
 - 演示语料：[docs/demo-corpus.md](docs/demo-corpus.md)
 - 面试问答：[docs/interview-qna.md](docs/interview-qna.md)
