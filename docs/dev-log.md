@@ -213,3 +213,29 @@
   - 真正损坏、不可解析或少于 100 字的文件重跑仍会失败，这是正确行为；Phase 5 Gate 使用的是“可恢复处理失败”场景，不应把不可恢复坏文件伪装成成功。
   - 展示版统计卡片只做库内聚合数字，不代表生产监控；真实 token 价格估算与图表化留到演示包装或后续扩展。
   - 前端依赖审计与大 chunk 警告继续延后处理。
+
+## 2026-06-15 — Phase 7 交付材料初稿
+
+- 做了什么：
+  - 从 `main` 切出 `phase-7`，创建 `docs/plans/phase-7.md`，明确 README、演示脚本、语料、面试材料、架构图和验收 Gate。
+  - 重写 `README.md` 为最终交付结构，包含核心特性、快速开始、架构、RAG 流程、页面、API 摘要、关键取舍、评测、演示材料和 Roadmap。
+  - 新增 `docs/architecture.md`，使用 Mermaid 记录运行时架构、数据关系、ingestion 状态机、检索 SQL、问答时序和 Provider 配置。
+  - 新增 `docs/demo-script.md`，整理 5 分钟演示时间线、推荐问题、失败演示方式、录屏检查表和备用方案。
+  - 新增 `docs/demo-corpus.md`，定稿 mini-mall 8 份推荐演示语料和问题映射。
+  - 新增 `docs/interview-qna.md`，整理简历描述、常见追问、不可夸大点和可翻代码位置。
+  - 更新 `PROGRESS.md`，将 Phase 7 标为进行中，未误标 Gate 通过。
+- 没做什么：
+  - 未录制真实浏览器演示视频；当前 CLI 环境不能替代 GUI 录屏。
+  - 未删除 Docker volume 做“干净机器”冷启动，因为这会清理本地测试数据库，需要用户明确同意。
+  - 未启动后保留前端服务；完整三容器健康验证后已执行 `docker compose stop frontend`。
+  - 未实现 Agent、SSE、hybrid 检索、rerank、docx 或任何演示临时功能。
+- 验证：
+  - `backend`: `mvn test` 通过，22 个测试。
+  - `frontend`: `npm run build` 通过；仍有 VueUse PURE 注释和 Element Plus 大 chunk 警告。
+  - `git diff --check` 通过。
+  - `docker compose up -d` 启动三容器后，postgres、backend、frontend 均 healthy。
+  - 按用户要求停止 frontend 后，最终仅 backend/postgres 运行且 healthy。
+  - 提升权限下验证 `GET /actuator/health` 返回 `UP`，`POST /api/auth/login` 返回 code 0。
+- 遗留：
+  - Phase 7 Gate 1 仍需在干净机器或经用户同意删除 Docker volume 后执行 README 三命令冷启动。
+  - Phase 7 Gate 2 仍需人工录制 ≤6 分钟浏览器演示视频。
