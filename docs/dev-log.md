@@ -240,3 +240,27 @@
 - 遗留：
   - Phase 7 Gate 1 仍需在干净机器或经用户同意删除 Docker volume 后执行 README 三命令冷启动。
   - Phase 7 Gate 2 仍需人工录制 ≤6 分钟浏览器演示视频。
+
+## 2026-06-16 — Phase 7 冷启动验收
+
+- 做了什么：
+  - 经用户明确要求执行 `docker compose down -v`，删除 `rag_postgres_data`，从空数据库重新启动三容器。
+  - 执行 `docker compose up -d` 后，postgres、backend、frontend 均达到 healthy。
+  - 从空首页开始通过浏览器自动化创建 `minimall文档库`，上传 quickstart 推荐的 3 份 mini-mall 文档。
+  - 等待 `README.md`、`architecture.md`、`phase3-ai-inventory-contract.md` 全部进入 `READY`，chunk 数分别为 19、10、27。
+  - 在知识库详情页执行检索调试 query：`gateway JWT trusted headers CORS rate limiting`，命中 `architecture.md` 与 gateway/trusted headers/CORS/rate limiting 相关 chunk。
+  - 在问答页验证库内问题返回 `OK` 且带 `[1]`、`[2]` 引用；库外问题 `学校食堂几点开门？` 返回 `NO_ANSWER`。
+  - 在后台验证概览统计、Ingestion 日志、模型调用日志、后台检索调试均可用。
+- 没做什么：
+  - 未接入真实大模型 API；本次仍使用默认 Mock Provider 验证工程链路。
+  - 未录制 ≤6 分钟演示视频；当前环境只能完成浏览器自动化验收，不能替代正式录屏。
+  - 未合并 Phase 7 到 `main`，因为录屏 Gate 未完成。
+- 验证：
+  - `docker compose down -v` 成功删除旧容器、网络和 `rag_postgres_data` volume。
+  - `docker compose up -d` 成功完成空 volume 启动，三容器 healthy。
+  - `GET /actuator/health` 返回 `UP`，前端 `http://localhost:3000` 返回 HTTP 200。
+  - `/tmp/rag-pw-runner/cold-start-e2e.js` 通过，输出 `PASS cold-start browser e2e`。
+  - 自动化截图保存在 `/tmp/rag-pw-runner/cold-00-empty-home.png`、`cold-01-documents-ready.png`、`cold-02-kb-retrieval.png`、`cold-03-chat.png`、`cold-04-admin-retrieval.png`。
+- 遗留：
+  - Phase 7 仅剩录屏 Gate：需要人工录制 ≤6 分钟浏览器演示视频。
+  - 当前 Codex 会话内的 Playwright MCP 仍未热重载新配置；全局 MCP 配置已改为使用本机 Chromium，下次重启 Codex 后应可直接使用。

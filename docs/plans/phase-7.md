@@ -8,7 +8,7 @@
 把已完成的 RAG MVP 整理成可冷启动、可演示、可写进简历、可回答面试追问的最终交付材料。
 
 ## 2. 验收 Gate（开工即明确，照抄不改）
-- [ ] 干净机器（或删 volume）按 README 三命令冷启动成功
+- [x] 干净机器（或删 volume）按 README 三命令冷启动成功
 - [ ] 演示录屏 ≤6 分钟
 
 ## 3. 任务卡拆分
@@ -69,8 +69,8 @@
 
 ## 6. 完成后动作
 - [x] 开工前已从最新 `main` 切出 `phase-7` 分支（禁止在 main 上提交）
-- [ ] 跑全量测试 + `docker compose up -d` 冷启动验证
-- [ ] `docs/dev-log.md` 追加各任务「做了什么/没做什么/遗留」
+- [x] 跑全量测试 + `docker compose up -d` 冷启动验证
+- [x] `docs/dev-log.md` 追加各任务「做了什么/没做什么/遗留」
 - [ ] Gate 全过 → 在 `PROGRESS.md` 勾掉本 Phase 并填日期；不过 → 记原因，不进下一阶段
 - [ ] 在 `phase-7` 分支做「阶段完成」提交：`git commit -m "phase-7: 演示与交付包装"`
 - [ ] Gate 通过后合并：`git checkout main && git merge --no-ff phase-7`
