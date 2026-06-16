@@ -2,7 +2,7 @@
 
 DevDocs RAG 是一个 Spring Boot 单体 + Vue 3 的项目文档智能问答系统。它面向工程文档场景，支持上传 Markdown/TXT/PDF，异步解析切块，写入 PostgreSQL + pgvector，并提供带引用溯源的 RAG 问答。
 
-当前状态：MVP 已完成 Phase 0-5，Phase 6 Agent 默认跳过，Phase 7 正在做交付包装。默认使用 Mock Provider，不配置任何模型 key 也能跑通完整链路。
+当前状态：MVP 已完成 Phase 0-5 与 Phase 7 交付包装，Phase 6 Agent 默认跳过。默认使用 Mock Provider，不配置任何模型 key 也能跑通完整链路；正式录屏作为 Post-MVP 延后项。
 
 ## 核心特性
 

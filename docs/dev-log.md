@@ -254,7 +254,7 @@
 - 没做什么：
   - 未接入真实大模型 API；本次仍使用默认 Mock Provider 验证工程链路。
   - 未录制 ≤6 分钟演示视频；当前环境只能完成浏览器自动化验收，不能替代正式录屏。
-  - 未合并 Phase 7 到 `main`，因为录屏 Gate 未完成。
+  - 当时未合并 Phase 7 到 `main`，因为录屏仍按 Gate 处理；后续已按用户决定调整为 Post-MVP 延后项。
 - 验证：
   - `docker compose down -v` 成功删除旧容器、网络和 `rag_postgres_data` volume。
   - `docker compose up -d` 成功完成空 volume 启动，三容器 healthy。
@@ -262,5 +262,21 @@
   - `/tmp/rag-pw-runner/cold-start-e2e.js` 通过，输出 `PASS cold-start browser e2e`。
   - 自动化截图保存在 `/tmp/rag-pw-runner/cold-00-empty-home.png`、`cold-01-documents-ready.png`、`cold-02-kb-retrieval.png`、`cold-03-chat.png`、`cold-04-admin-retrieval.png`。
 - 遗留：
-  - Phase 7 仅剩录屏 Gate：需要人工录制 ≤6 分钟浏览器演示视频。
+  - 当时仅剩录屏 Gate；后续已调整为 Post-MVP 延后项，不阻塞 MVP 合并。
   - 当前 Codex 会话内的 Playwright MCP 仍未热重载新配置；全局 MCP 配置已改为使用本机 Chromium，下次重启 Codex 后应可直接使用。
+
+## 2026-06-16 — Phase 7 MVP 验收标准调整
+
+- 做了什么：
+  - 按用户决定，将正式浏览器录屏从 Phase 7 MVP 合并 Gate 调整为 Post-MVP 延后项。
+  - Phase 7 当前验收口径调整为：交付材料完整、干净 volume 冷启动通过、浏览器端到端验收通过。
+  - 更新 `PROGRESS.md`，将 Phase 7 标记为 ✅，完成日期为 2026-06-16。
+  - 更新 `docs/plans/phase-7.md` 与 `README.md`，明确录屏不再阻塞当前 MVP 合并。
+- 没做什么：
+  - 未伪造或补写录屏证据。
+  - 未接入真实大模型 API；当前 MVP 仍以默认 Mock Provider 验证完整工程链路。
+- 验证：
+  - 已有冷启动浏览器验收输出：`PASS cold-start browser e2e`。
+  - 冷启动后 frontend、backend、postgres 三容器均 healthy。
+- 遗留：
+  - 录屏仍建议后续补做，用于远程仓库展示或面试演示，但不再作为 Phase 7 MVP 合并前置条件。
