@@ -213,3 +213,70 @@
   - 真正损坏、不可解析或少于 100 字的文件重跑仍会失败，这是正确行为；Phase 5 Gate 使用的是“可恢复处理失败”场景，不应把不可恢复坏文件伪装成成功。
   - 展示版统计卡片只做库内聚合数字，不代表生产监控；真实 token 价格估算与图表化留到演示包装或后续扩展。
   - 前端依赖审计与大 chunk 警告继续延后处理。
+
+## 2026-06-15 — Phase 7 交付材料初稿
+
+- 做了什么：
+  - 从 `main` 切出 `phase-7`，创建 `docs/plans/phase-7.md`，明确 README、演示脚本、语料、面试材料、架构图和验收 Gate。
+  - 重写 `README.md` 为最终交付结构，包含核心特性、快速开始、架构、RAG 流程、页面、API 摘要、关键取舍、评测、演示材料和 Roadmap。
+  - 新增 `docs/architecture.md`，使用 Mermaid 记录运行时架构、数据关系、ingestion 状态机、检索 SQL、问答时序和 Provider 配置。
+  - 新增 `docs/demo-script.md`，整理 5 分钟演示时间线、推荐问题、失败演示方式、录屏检查表和备用方案。
+  - 新增 `docs/demo-quickstart.md`，整理首次打开前端后的完整功能测试路线、推荐上传文档、问题样例、后台检查点和失败路径预期。
+  - 新增 `docs/demo-corpus.md`，定稿 mini-mall 8 份推荐演示语料和问题映射。
+  - 新增 `docs/interview-qna.md`，整理简历描述、常见追问、不可夸大点和可翻代码位置。
+  - 更新 `PROGRESS.md`，将 Phase 7 标为进行中，未误标 Gate 通过。
+- 没做什么：
+  - 未录制真实浏览器演示视频；当前 CLI 环境不能替代 GUI 录屏。
+  - 未删除 Docker volume 做“干净机器”冷启动，因为这会清理本地测试数据库，需要用户明确同意。
+  - 未启动后保留前端服务；完整三容器健康验证后已执行 `docker compose stop frontend`。
+  - 未实现 Agent、SSE、hybrid 检索、rerank、docx 或任何演示临时功能。
+- 验证：
+  - `backend`: `mvn test` 通过，22 个测试。
+  - `frontend`: `npm run build` 通过；仍有 VueUse PURE 注释和 Element Plus 大 chunk 警告。
+  - `git diff --check` 通过。
+  - `docker compose up -d` 启动三容器后，postgres、backend、frontend 均 healthy。
+  - 按用户要求停止 frontend 后，最终仅 backend/postgres 运行且 healthy。
+  - 提升权限下验证 `GET /actuator/health` 返回 `UP`，`POST /api/auth/login` 返回 code 0。
+- 遗留：
+  - Phase 7 Gate 1 仍需在干净机器或经用户同意删除 Docker volume 后执行 README 三命令冷启动。
+  - Phase 7 Gate 2 仍需人工录制 ≤6 分钟浏览器演示视频。
+
+## 2026-06-16 — Phase 7 冷启动验收
+
+- 做了什么：
+  - 经用户明确要求执行 `docker compose down -v`，删除 `rag_postgres_data`，从空数据库重新启动三容器。
+  - 执行 `docker compose up -d` 后，postgres、backend、frontend 均达到 healthy。
+  - 从空首页开始通过浏览器自动化创建 `minimall文档库`，上传 quickstart 推荐的 3 份 mini-mall 文档。
+  - 等待 `README.md`、`architecture.md`、`phase3-ai-inventory-contract.md` 全部进入 `READY`，chunk 数分别为 19、10、27。
+  - 在知识库详情页执行检索调试 query：`gateway JWT trusted headers CORS rate limiting`，命中 `architecture.md` 与 gateway/trusted headers/CORS/rate limiting 相关 chunk。
+  - 在问答页验证库内问题返回 `OK` 且带 `[1]`、`[2]` 引用；库外问题 `学校食堂几点开门？` 返回 `NO_ANSWER`。
+  - 在后台验证概览统计、Ingestion 日志、模型调用日志、后台检索调试均可用。
+- 没做什么：
+  - 未接入真实大模型 API；本次仍使用默认 Mock Provider 验证工程链路。
+  - 未录制 ≤6 分钟演示视频；当前环境只能完成浏览器自动化验收，不能替代正式录屏。
+  - 当时未合并 Phase 7 到 `main`，因为录屏仍按 Gate 处理；后续已按用户决定调整为 Post-MVP 延后项。
+- 验证：
+  - `docker compose down -v` 成功删除旧容器、网络和 `rag_postgres_data` volume。
+  - `docker compose up -d` 成功完成空 volume 启动，三容器 healthy。
+  - `GET /actuator/health` 返回 `UP`，前端 `http://localhost:3000` 返回 HTTP 200。
+  - `/tmp/rag-pw-runner/cold-start-e2e.js` 通过，输出 `PASS cold-start browser e2e`。
+  - 自动化截图保存在 `/tmp/rag-pw-runner/cold-00-empty-home.png`、`cold-01-documents-ready.png`、`cold-02-kb-retrieval.png`、`cold-03-chat.png`、`cold-04-admin-retrieval.png`。
+- 遗留：
+  - 当时仅剩录屏 Gate；后续已调整为 Post-MVP 延后项，不阻塞 MVP 合并。
+  - 当前 Codex 会话内的 Playwright MCP 仍未热重载新配置；全局 MCP 配置已改为使用本机 Chromium，下次重启 Codex 后应可直接使用。
+
+## 2026-06-16 — Phase 7 MVP 验收标准调整
+
+- 做了什么：
+  - 按用户决定，将正式浏览器录屏从 Phase 7 MVP 合并 Gate 调整为 Post-MVP 延后项。
+  - Phase 7 当前验收口径调整为：交付材料完整、干净 volume 冷启动通过、浏览器端到端验收通过。
+  - 更新 `PROGRESS.md`，将 Phase 7 标记为 ✅，完成日期为 2026-06-16。
+  - 更新 `docs/plans/phase-7.md` 与 `README.md`，明确录屏不再阻塞当前 MVP 合并。
+- 没做什么：
+  - 未伪造或补写录屏证据。
+  - 未接入真实大模型 API；当前 MVP 仍以默认 Mock Provider 验证完整工程链路。
+- 验证：
+  - 已有冷启动浏览器验收输出：`PASS cold-start browser e2e`。
+  - 冷启动后 frontend、backend、postgres 三容器均 healthy。
+- 遗留：
+  - 录屏仍建议后续补做，用于远程仓库展示或面试演示，但不再作为 Phase 7 MVP 合并前置条件。
