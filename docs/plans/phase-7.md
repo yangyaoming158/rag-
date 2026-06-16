@@ -79,5 +79,5 @@ Post-MVP 延后项：
 - [x] 跑全量测试 + `docker compose up -d` 冷启动验证
 - [x] `docs/dev-log.md` 追加各任务「做了什么/没做什么/遗留」
 - [x] Gate 全过 → 在 `PROGRESS.md` 勾掉本 Phase 并填日期；不过 → 记原因，不进下一阶段
-- [ ] 在 `phase-7` 分支做「阶段完成」提交：`git commit -m "phase-7: 演示与交付包装"`
-- [ ] Gate 通过后合并：`git checkout main && git merge --no-ff phase-7`
+- [x] 在 `phase-7` 分支做「阶段完成」提交：`git commit -m "phase-7: 演示与交付包装"`
+- [x] Gate 通过后合并：`git checkout main && git merge --no-ff phase-7`
