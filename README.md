@@ -1,8 +1,30 @@
 # DevDocs RAG — 项目文档智能问答系统
 
+[![CI](https://github.com/yangyaoming158/rag-/actions/workflows/ci.yml/badge.svg)](https://github.com/yangyaoming158/rag-/actions/workflows/ci.yml)
+
 DevDocs RAG 是一个 Spring Boot 单体 + Vue 3 的项目文档智能问答系统。它面向工程文档场景，支持上传 Markdown/TXT/PDF，异步解析切块，写入 PostgreSQL + pgvector，并提供带引用溯源的 RAG 问答。
 
 当前状态：MVP 已完成 Phase 0-5 与 Phase 7 交付包装，Phase 6 Agent 默认跳过。默认使用 Mock Provider，不配置任何模型 key 也能跑通完整链路；正式录屏作为 Post-MVP 延后项。
+
+## 项目截图
+
+| 知识库首页 | READY 文档列表 |
+|---|---|
+| ![知识库首页](docs/images/01-home.png) | ![READY 文档列表](docs/images/02-documents-ready.png) |
+
+| 引用问答 | 库外拒答 |
+|---|---|
+| ![带引用的问答结果](docs/images/03-chat-with-citations.png) | ![NO_ANSWER 拒答结果](docs/images/04-no-answer.png) |
+
+| 模型调用日志 | Ingestion 日志 |
+|---|---|
+| ![模型调用日志](docs/images/05-model-call-logs.png) | ![Ingestion 日志](docs/images/06-ingestion-jobs.png) |
+
+| 检索调试 |
+|---|
+| ![检索调试结果](docs/images/07-retrieval-debug.png) |
+
+演示视频：暂缓录制，后续补充正式链接；当前展示以截图、真实 Provider 评测和本地可复现启动流程为准。
 
 ## 核心特性
 
@@ -131,7 +153,8 @@ UPLOAD -> PARSE -> CHUNK -> EMBED -> READY
 
 - 检索评测见 [docs/eval/retrieval.md](docs/eval/retrieval.md)：Mock 模式 mini-mall 8 份文档，10 query top1 命中 8/10，默认阈值 `0.35`。
 - 问答评测见 [docs/eval/questions.md](docs/eval/questions.md)：20 道库内题 19/20 有引用回答，5 道库外题 5/5 `NO_ANSWER`。
-- 以上是 Mock Provider 离线基线。接入真实 Chat/Embedding Provider 后必须复测并重新标定阈值。
+- 真实 Provider 评测见 [docs/eval/real-provider-baseline.md](docs/eval/real-provider-baseline.md)：DeepSeek `deepseek-v4-flash` + SiliconFlow `BAAI/bge-m3`，8 份文档 131 chunks，10 query top1 命中 9/10、top3 命中 10/10；20 道库内题 20/20 有引用回答，5 道库外题 5/5 `NO_ANSWER`。
+- 以上 Mock Provider 离线基线只证明工程链路可跑，不能代表真实模型效果。
 
 ## 演示材料
 
@@ -146,6 +169,8 @@ UPLOAD -> PARSE -> CHUNK -> EMBED -> READY
 DevDocs RAG 与 mini-mall 是独立项目，零代码耦合。mini-mall 的工程文档作为种子语料，用来演示非结构化工程知识问答。两个项目覆盖不同 AI 落地形态：mini-mall 是结构化数据上的库存建议，DevDocs RAG 是非结构化文档检索问答。
 
 ## 开发命令
+
+CI 使用 GitHub Actions 分别执行后端测试和前端构建，配置见 [.github/workflows/ci.yml](.github/workflows/ci.yml)。本地等价命令如下。
 
 后端：
 

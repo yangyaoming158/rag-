@@ -204,7 +204,7 @@
   - 未进入 Phase 6，也未做 Phase 7 演示包装。
 - 验证：
   - `backend`: `mvn test` 通过，22 个测试。
-  - `frontend`: `npm run build` 通过；仍有 VueUse PURE 注释和 Element Plus 大 chunk 警告。
+  - `frontend`: `npm run build` 通过；仍有 VueUse PURE 注释和 Rollup 大 chunk 警告。
   - `git diff --check` 通过。
   - `docker compose build --pull=false backend && docker compose up -d backend` 通过；最终仅 backend/postgres 运行，frontend 未启动。
   - Admin API smoke：`/api/admin/stats/overview`、`/api/admin/ingestion-jobs`、`/api/admin/model-calls`、`/api/admin/retrieval-debug` 均返回 HTTP 200 / code 0。
@@ -232,7 +232,7 @@
   - 未实现 Agent、SSE、hybrid 检索、rerank、docx 或任何演示临时功能。
 - 验证：
   - `backend`: `mvn test` 通过，22 个测试。
-  - `frontend`: `npm run build` 通过；仍有 VueUse PURE 注释和 Element Plus 大 chunk 警告。
+  - `frontend`: `npm run build` 通过；仍有 VueUse PURE 注释和 Rollup 大 chunk 警告。
   - `git diff --check` 通过。
   - `docker compose up -d` 启动三容器后，postgres、backend、frontend 均 healthy。
   - 按用户要求停止 frontend 后，最终仅 backend/postgres 运行且 healthy。
@@ -280,3 +280,76 @@
   - 冷启动后 frontend、backend、postgres 三容器均 healthy。
 - 遗留：
   - 录屏仍建议后续补做，用于远程仓库展示或面试演示，但不再作为 Phase 7 MVP 合并前置条件。
+
+## 2026-06-17 — Post-MVP P0 真实 Provider 评测准备
+
+- 做了什么：
+  - 检查本地 `.env` 的 Provider 配置，只输出 provider/model 与 key 是否存在，不输出密钥值。
+  - 确认当前仍为 `RAG_AI_CHAT_PROVIDER=mock`、`RAG_AI_EMBEDDING_PROVIDER=mock`，真实 base URL 和 API key 均未配置。
+  - 新增 `docs/plans/post-mvp-p0-real-provider.md`，记录真实 Provider 评测的前置条件、执行步骤、验收标准和风险预案。
+  - 新增 `docs/eval/real-provider-baseline.md`，作为真实 Provider 检索 10 query、问答 25 题、失败案例和指标汇总模板。
+  - 更新 README 评测区，增加真实 Provider 评测模板链接，并明确 Mock 指标不能代表真实模型效果。
+- 没做什么：
+  - 未执行真实 Provider 评测，因为本地 `.env` 未配置真实 Chat / Embedding Provider。
+  - 未把 Mock 评测结果伪装为真实模型结果。
+  - 未修改 `.env`，也未写入任何 API key。
+- 遗留：
+  - 需要提供真实 Chat Provider 的 base URL、model、API key。
+  - 需要提供真实 Embedding Provider 的 base URL、model、API key；优先选择 1024 维 embedding 模型，否则要先改数据库 schema 与维度校验。
+  - 配置完成后继续执行 `docs/plans/post-mvp-p0-real-provider.md`，并将真实结果填入 `docs/eval/real-provider-baseline.md`。
+
+## 2026-06-17 — Post-MVP P0 真实 Provider 基线评测
+
+- 做了什么：
+  - 用户将 `.env` 更新为真实 Provider：Chat 使用 DeepSeek OpenAI-compatible API，model 为 `deepseek-v4-flash`；Embedding 使用 SiliconFlow OpenAI-compatible API，model 为 `BAAI/bge-m3`，维度 1024。
+  - 执行 `docker compose up -d --force-recreate backend`，确认运行中的 backend 已加载真实 provider 配置。
+  - 用 smoke KB 验证真实 embedding 入库和真实 chat 问答均可用。
+  - 新建正式评测知识库 `real-provider-baseline-20260617`（KB id 4），上传 8 份 mini-mall 工程文档，全部处理到 `READY`，共 131 chunks。
+  - 执行 10 条真实检索评测：top1 命中 9/10，top3 命中 10/10。
+  - 执行 25 道真实问答评测：20/20 库内题 `OK` 且有引用，5/5 库外题 `NO_ANSWER`，`UNGROUNDED` 为 0。
+  - 更新 `docs/eval/real-provider-baseline.md`，记录 provider、model、语料、检索结果、问答结果、模型调用统计和 3 个失败/边界案例。
+  - 更新 README 评测摘要，加入真实 Provider 基线指标。
+  - 更新 `PROGRESS.md` 的 Post-MVP 优化进度，标记 P0-1 真实 Provider 基线评测完成。
+  - 将更新后的 `post-mvp-p0-real-provider.md` 与 `real-provider-baseline.md` 同步到本地 `DevDocs RAG 项目文档` 知识库，并重跑旧的 `post-mvp-optimization.md`，确保该知识库内 35 个 chunks 全部使用 `BAAI/bge-m3`。
+- 没做什么：
+  - 未覆盖或重跑既有 Mock 知识库，避免 Mock embedding 与真实 embedding 向量空间混用。
+  - 未把 API key 写入仓库或输出到日志。
+  - 未调整 `RAG_RETRIEVAL_MIN_SIMILARITY` 默认值；本轮只记录真实评测下的阈值建议。
+- 遗留：
+  - 当前 0.35 threshold 在真实 embedding 下偏低，两个库外问题会进入 Chat 后再拒答；后续可评估上调到 0.45。
+  - 第 1 条检索 query top1 命中相邻 API contract 文档，预期 architecture.md 位于 top2；后续 Hybrid Search 需要重点覆盖这类跨文档工程术语问题。
+  - 正式演示时应明确 Mock KB 与 Real KB 分开，不能混用两种 embedding 空间。
+
+## 2026-06-17 — Post-MVP P0 GitHub Actions CI
+
+- 做了什么：
+  - 新增 `.github/workflows/ci.yml`。
+  - CI 拆成 `backend-test` 和 `frontend-build` 两个 job，便于失败时直接区分后端测试问题还是前端构建问题。
+  - `backend-test` 使用 JDK 17 + Maven cache，执行 `mvn -B test`。
+  - `frontend-build` 使用 Node.js 20 + npm cache，执行 `npm ci` 和 `npm run build`。
+  - README 顶部增加 CI badge，并在开发命令区说明本地等价命令。
+  - 更新 `PROGRESS.md`，将 Post-MVP P0-2 标记为完成。
+- 没做什么：
+  - 未在 CI 中配置真实 Provider API key；CI 只验证离线可重复的后端单测和前端构建。
+  - 未加入 Docker Compose 集成测试，避免当前 P0 CI 引入更高维护成本。
+- 验证：
+  - `backend`: `mvn -B test` 通过，22 个测试。
+  - `frontend`: `npm ci` 通过；首次沙箱内执行因 esbuild 二进制校验触发本地 `EPERM`，提权重跑同一命令通过。
+  - `frontend`: `npm run build` 通过；仍有 VueUse PURE 注释和 Rollup 大 chunk 警告。
+  - `git diff --check` 通过。
+
+## 2026-06-17 — Post-MVP README 截图
+
+- 做了什么：
+  - 新增 `docs/images/`，生成 7 张展示截图：知识库首页、READY 文档列表、带引用问答、`NO_ANSWER` 拒答、模型调用日志、Ingestion 日志、检索调试。
+  - 使用已有真实评测 KB 和历史问答会话截图；检索调试截图会触发少量真实 embedding 请求，但没有重新调用真实 Chat 模型。
+  - 截图环境缺少中文字体，先尝试 Playwright MCP 截图后发现中文显示方框；随后临时下载 `fonts-wqy-microhei` 到 `/tmp`，通过临时 `FONTCONFIG_FILE` 注入字体后重截。
+  - 更新 README，加入截图展示区。
+  - 更新 `PROGRESS.md`，将截图标记完成，并按用户决定将演示视频标记为暂缓。
+- 没做什么：
+  - 未录制演示视频，也未伪造视频链接。
+  - 未把临时字体包或截图脚本写入仓库。
+  - 未输出或提交任何 API key。
+- 验证：
+  - 7 张截图均为 1440 x 960 PNG。
+  - 抽查确认中文字体正常显示，页面内容包含引用、拒答、模型调用日志和检索命中结果。

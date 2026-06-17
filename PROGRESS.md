@@ -4,7 +4,7 @@
 > 规则：一个 Phase 的全部 Gate 通过、且跑过全量测试 + Compose 冷启动后，才把状态改为 ✅ 并填完成日期。
 > Gate 不过保持 ⬜ 并在「备注」记原因；上一个 Phase 未 ✅，下一个不许开工。
 
-最近更新：2026-06-16（Phase 7 MVP 验收通过，录屏延期）
+最近更新：2026-06-17（Post-MVP README 截图完成，演示视频暂缓）
 
 ## 阶段总览
 
@@ -21,6 +21,15 @@
 | 7 | 演示 / README / 简历包装 | ✅ | 2026-06-16 | docs/plans/phase-7.md | README/架构/脚本/面试材料已补；干净 volume 冷启动与浏览器 E2E 已通过；录屏延期，不阻塞 MVP 合并 |
 
 状态图例：⬜ 未开始 · 🔧 进行中 · ✅ 验收通过 · ⏭️ 跳过
+
+## Post-MVP 优化进度
+
+| 项 | 内容 | 状态 | 完成日期 | 交付物 | 备注 |
+|---|---|---|---|---|---|
+| P0-1 | 真实 Provider 基线评测 | ✅ | 2026-06-17 | docs/eval/real-provider-baseline.md | DeepSeek `deepseek-v4-flash` + SiliconFlow `BAAI/bge-m3`；8 文档 131 chunks；检索 top1 9/10、top3 10/10；库内 20/20，库外 5/5 |
+| P0-2 | GitHub Actions CI | ✅ | 2026-06-17 | .github/workflows/ci.yml | backend-test 执行 `mvn -B test`；frontend-build 执行 `npm ci` + `npm run build` |
+| P0-3 | README 截图 | ✅ | 2026-06-17 | docs/images/* | 7 张截图已生成并接入 README |
+| P0-4 | 演示视频 | ⏭️ 暂缓 | — | — | 用户决定先搁置，不伪造视频链接 |
 
 ## 各 Phase 验收 Gate 清单
 
