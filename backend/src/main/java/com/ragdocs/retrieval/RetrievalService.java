@@ -44,7 +44,7 @@ public class RetrievalService {
         String query = normalizeQuery(request.query());
         int topK = normalizeTopK(request.topK());
         float[] queryVector = embedQuery(query);
-        List<RetrievalHit> hits = retrievalRepository.search(kbId, queryVector, topK);
+        List<RetrievalHit> hits = retrievalRepository.search(kbId, queryVector, query, topK);
         return new RetrievalDebugResponse(
                 query,
                 topK,
@@ -128,6 +128,8 @@ public class RetrievalService {
                     hit.pageEnd(),
                     hit.charLen(),
                     hit.similarity(),
+                    hit.keywordScore(),
+                    hit.finalScore(),
                     hit.similarity() >= retrievalProperties.minSimilarity(),
                     preview(hit.content())
             ));

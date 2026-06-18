@@ -112,11 +112,14 @@
           row-key="chunkId"
         >
           <el-table-column prop="rank" label="#" width="64" />
-          <el-table-column label="Score" width="110">
+          <el-table-column label="Score" width="170">
             <template #default="{ row }">
-              <el-tag :type="row.aboveThreshold ? 'success' : 'info'" effect="plain">
-                {{ formatScore(row.similarity) }}
-              </el-tag>
+              <div class="score-stack">
+                <el-tag :type="row.aboveThreshold ? 'success' : 'info'" effect="plain">
+                  F {{ formatScore(row.finalScore) }}
+                </el-tag>
+                <span>V {{ formatScore(row.similarity) }} / K {{ formatScore(row.keywordScore) }}</span>
+              </div>
             </template>
           </el-table-column>
           <el-table-column label="来源" min-width="220">
@@ -398,6 +401,17 @@ function documentRowClass({ row }: { row: DocumentDto }) {
   line-height: 1.55;
   margin: 0;
   overflow-wrap: anywhere;
+}
+
+.score-stack {
+  display: grid;
+  gap: 6px;
+}
+
+.score-stack span {
+  color: #6b7280;
+  font-size: 12px;
+  white-space: nowrap;
 }
 
 :deep(.focused-document-row) {

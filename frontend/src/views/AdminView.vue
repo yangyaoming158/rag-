@@ -220,11 +220,14 @@
             row-key="chunkId"
           >
             <el-table-column prop="rank" label="#" width="64" />
-            <el-table-column label="Score" width="170">
+            <el-table-column label="Score" width="190">
               <template #default="{ row }">
                 <div class="score-cell">
-                  <el-progress :percentage="scorePercent(row.similarity)" :show-text="false" />
-                  <span>{{ row.similarity.toFixed(3) }}</span>
+                  <el-progress :percentage="scorePercent(row.finalScore)" :show-text="false" />
+                  <div>
+                    <strong>F {{ row.finalScore.toFixed(3) }}</strong>
+                    <span>V {{ row.similarity.toFixed(3) }} / K {{ row.keywordScore.toFixed(3) }}</span>
+                  </div>
                 </div>
               </template>
             </el-table-column>
@@ -449,7 +452,7 @@ function tokenTotal(row: ModelCallDto) {
 }
 
 function scorePercent(value: number) {
-  return Math.max(0, Math.min(100, Math.round(value * 100)))
+  return Math.max(0, Math.min(100, Math.round((value / 0.033) * 100)))
 }
 
 function formatTime(value: string | null) {
@@ -547,11 +550,22 @@ function formatTime(value: string | null) {
   align-items: center;
   display: grid;
   gap: 6px;
-  grid-template-columns: minmax(80px, 1fr) 48px;
+  grid-template-columns: minmax(80px, 1fr) 92px;
+}
+
+.score-cell div {
+  display: grid;
+  gap: 2px;
+}
+
+.score-cell strong {
+  color: #111827;
+  font-size: 13px;
 }
 
 .score-cell span {
   color: #4b5563;
+  font-size: 12px;
   font-variant-numeric: tabular-nums;
 }
 

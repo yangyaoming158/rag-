@@ -47,6 +47,8 @@ export interface RetrievalHitDto {
   pageEnd: number | null
   charLen: number
   similarity: number
+  keywordScore: number
+  finalScore: number
   aboveThreshold: boolean
   contentPreview: string
 }

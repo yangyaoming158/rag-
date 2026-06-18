@@ -353,3 +353,44 @@
 - 验证：
   - 7 张截图均为 1440 x 960 PNG。
   - 抽查确认中文字体正常显示，页面内容包含引用、拒答、模型调用日志和检索命中结果。
+
+## 2026-06-18 — Post-MVP P1 失败样本复盘
+
+- 做了什么：
+  - 新增 `docs/eval/failure-cases.md`。
+  - 基于 `docs/eval/real-provider-baseline.md`、`docs/eval/retrieval.md`、`docs/eval/questions.md` 和本地数据库记录，整理 4 个失败或边界案例。
+  - 覆盖检索失败：真实 Provider 下 `gateway JWT trusted headers CORS rate limiting` Top1 命中相邻 API contract 文档，预期 architecture 位于 Top2。
+  - 覆盖引用问题：评测 KB 中有 3 个同名 `README.md`，citation snapshot 只持久化 `document_filename`、`snippet`、`similarity` 和 `chunk_id`，heading 依赖 live chunk join，历史引用定位不够稳。
+  - 覆盖拒答边界：库外问题 top1 similarity 0.384，高于 0.35 threshold，进入 Chat 后才拒答。
+  - 覆盖 provider 配置错误：错误模型名 `deepseek v4` 导致真实 Chat HTTP 400，并写入 `model_call_logs`。
+  - 更新 README 评测区，增加失败样本复盘入口。
+  - 更新 `PROGRESS.md`，将 P1-1 标记完成，并新增 P1-2 Hybrid Search 待办。
+- 没做什么：
+  - 未修改检索代码、数据库 schema 或前端页面。
+  - 未调整 `RAG_RETRIEVAL_MIN_SIMILARITY` 默认值；阈值调整留到 Hybrid Search 或真实 Provider 二次标定。
+  - 未重跑真实 Chat 问答评测。
+- 验证：
+  - `docker compose up -d` 恢复本地 postgres/backend/frontend，三容器 healthy。
+  - 查询 `documents`、`citations`、`model_call_logs` 验证 failure cases 有本地证据。
+
+## 2026-06-18 — Post-MVP P1 Hybrid Search MVP
+
+- 做了什么：
+  - 在 `RetrievalRepository` 中实现 vector search topN + keyword search topN + RRF fusion。
+  - keyword search 使用 PostgreSQL ILIKE MVP，不新增 schema 和索引；搜索范围为文件名、heading_path 和 chunk content。
+  - `RetrievalHit` 和 `RetrievalHitDto` 增加 `keywordScore` 与 `finalScore`，保留 `similarity` 作为 vector score。
+  - RAG 问答复用 hybrid 排序，但 `NO_ANSWER` 短路仍要求候选集中至少一个 vector similarity 过阈值，避免 keyword-only 命中直接绕过拒答阈值。
+  - KB 详情页和管理后台检索调试页展示 F/V/K 三类分数。
+  - 新增 `docs/design/hybrid-search.md` 和 `docs/eval/hybrid-search.md`。
+  - README 增加 Hybrid Search 设计和评测入口。
+  - 更新 `PROGRESS.md`，将 P1-2 标记完成。
+- 没做什么：
+  - 未引入 Elasticsearch、Milvus、rerank model 或 PostgreSQL GIN full-text index。
+  - 未改变数据库 schema。
+  - 未调整默认 similarity threshold。
+- 验证：
+  - `backend`: `mvn -B test` 通过，22 个测试。
+  - `frontend`: `npm run build` 通过；仍有 VueUse PURE 注释和 Rollup 大 chunk 警告。
+  - `docker compose up -d --build backend frontend` 成功，backend/frontend/postgres healthy。
+  - 本地真实 Provider KB `real-provider-baseline-20260617` 上 10 条工程术语 query：top1 6/10，top3 10/10。
+  - 检索接口返回 `similarity`、`keywordScore`、`finalScore`，前端调试页可展示三类分数。

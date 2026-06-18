@@ -33,8 +33,11 @@ class RetrievalServiceTest {
         assertThat(response.hits()).hasSize(1);
         assertThat(response.hits().get(0).documentFilename()).isEqualTo("architecture.md");
         assertThat(response.hits().get(0).aboveThreshold()).isTrue();
+        assertThat(response.hits().get(0).similarity()).isEqualTo(0.71);
+        assertThat(response.hits().get(0).finalScore()).isEqualTo(0.71);
         assertThat(retrievalRepository.lastKbId).isEqualTo(10L);
         assertThat(retrievalRepository.lastTopK).isEqualTo(8);
+        assertThat(retrievalRepository.lastQuery).isEqualTo("order status");
         assertThat(knowledgeBaseRepository.lastOwnerId).isEqualTo(7L);
     }
 
@@ -85,6 +88,7 @@ class RetrievalServiceTest {
         private boolean searchCalled;
         private long lastKbId;
         private int lastTopK;
+        private String lastQuery;
 
         FakeRetrievalRepository(List<RetrievalHit> result) {
             super(null);
@@ -93,9 +97,15 @@ class RetrievalServiceTest {
 
         @Override
         public List<RetrievalHit> search(long kbId, float[] queryVector, int topK) {
+            return search(kbId, queryVector, "", topK);
+        }
+
+        @Override
+        public List<RetrievalHit> search(long kbId, float[] queryVector, String query, int topK) {
             searchCalled = true;
             lastKbId = kbId;
             lastTopK = topK;
+            lastQuery = query;
             return result;
         }
     }

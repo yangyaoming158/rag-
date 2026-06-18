@@ -154,6 +154,8 @@ UPLOAD -> PARSE -> CHUNK -> EMBED -> READY
 - 检索评测见 [docs/eval/retrieval.md](docs/eval/retrieval.md)：Mock 模式 mini-mall 8 份文档，10 query top1 命中 8/10，默认阈值 `0.35`。
 - 问答评测见 [docs/eval/questions.md](docs/eval/questions.md)：20 道库内题 19/20 有引用回答，5 道库外题 5/5 `NO_ANSWER`。
 - 真实 Provider 评测见 [docs/eval/real-provider-baseline.md](docs/eval/real-provider-baseline.md)：DeepSeek `deepseek-v4-flash` + SiliconFlow `BAAI/bge-m3`，8 份文档 131 chunks，10 query top1 命中 9/10、top3 命中 10/10；20 道库内题 20/20 有引用回答，5 道库外题 5/5 `NO_ANSWER`。
+- 失败样本复盘见 [docs/eval/failure-cases.md](docs/eval/failure-cases.md)：记录检索偏移、引用定位不精确、库外误召回和 provider 配置错误等边界案例。
+- Hybrid Search 评测见 [docs/eval/hybrid-search.md](docs/eval/hybrid-search.md)：向量检索 + 关键词检索 + RRF 融合，10 条工程术语 query top3 命中 10/10，检索调试页展示 vector、keyword 和 final score。
 - 以上 Mock Provider 离线基线只证明工程链路可跑，不能代表真实模型效果。
 
 ## 演示材料
@@ -161,6 +163,7 @@ UPLOAD -> PARSE -> CHUNK -> EMBED -> READY
 - 快速体验：[docs/demo-quickstart.md](docs/demo-quickstart.md)
 - 演示脚本：[docs/demo-script.md](docs/demo-script.md)
 - 演示语料：[docs/demo-corpus.md](docs/demo-corpus.md)
+- Hybrid Search 设计：[docs/design/hybrid-search.md](docs/design/hybrid-search.md)
 - 面试问答：[docs/interview-qna.md](docs/interview-qna.md)
 - 阶段记录：[docs/dev-log.md](docs/dev-log.md)
 

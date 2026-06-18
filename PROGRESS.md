@@ -4,7 +4,7 @@
 > 规则：一个 Phase 的全部 Gate 通过、且跑过全量测试 + Compose 冷启动后，才把状态改为 ✅ 并填完成日期。
 > Gate 不过保持 ⬜ 并在「备注」记原因；上一个 Phase 未 ✅，下一个不许开工。
 
-最近更新：2026-06-17（Post-MVP README 截图完成，演示视频暂缓）
+最近更新：2026-06-18（Post-MVP P1 Hybrid Search MVP 完成）
 
 ## 阶段总览
 
@@ -30,6 +30,8 @@
 | P0-2 | GitHub Actions CI | ✅ | 2026-06-17 | .github/workflows/ci.yml | backend-test 执行 `mvn -B test`；frontend-build 执行 `npm ci` + `npm run build` |
 | P0-3 | README 截图 | ✅ | 2026-06-17 | docs/images/* | 7 张截图已生成并接入 README |
 | P0-4 | 演示视频 | ⏭️ 暂缓 | — | — | 用户决定先搁置，不伪造视频链接 |
+| P1-1 | 失败样本复盘 | ✅ | 2026-06-18 | docs/eval/failure-cases.md | 记录检索失败、引用定位问题、拒答边界和 provider 配置错误 |
+| P1-2 | Hybrid Search | ✅ | 2026-06-18 | docs/design/hybrid-search.md、docs/eval/hybrid-search.md | vector + keyword + RRF；工程术语 query top3 10/10；调试页展示 V/K/F 分数 |
 
 ## 各 Phase 验收 Gate 清单
 

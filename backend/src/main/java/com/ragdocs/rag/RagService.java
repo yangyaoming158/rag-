@@ -116,7 +116,7 @@ public class RagService {
         RagMessage userMessage = messageRepository.create(conversation.id(), "USER", question, "OK", null, null, null);
         List<RetrievalHit> hits = retrieve(conversation.kbId(), question);
 
-        if (hits.isEmpty() || hits.get(0).similarity() < retrievalProperties.minSimilarity()) {
+        if (hits.isEmpty() || !hasGroundedVectorHit(hits)) {
             long latencyMs = elapsedMillis(start);
             RagMessage assistantMessage = messageRepository.create(
                     conversation.id(),
@@ -223,7 +223,7 @@ public class RagService {
             if (embeddings.size() != 1) {
                 throw new EmbeddingCallException("Embedding 响应数量不匹配");
             }
-            return retrievalRepository.search(kbId, embeddings.get(0), RETRIEVAL_TOP_K);
+            return retrievalRepository.search(kbId, embeddings.get(0), question, RETRIEVAL_TOP_K);
         } catch (RuntimeException ex) {
             modelCallLogRepository.recordEmbedding(
                     null,
@@ -236,6 +236,11 @@ public class RagService {
             );
             throw new BusinessException(ErrorCode.EMBEDDING_CALL_FAILED, readableMessage(ex));
         }
+    }
+
+    private boolean hasGroundedVectorHit(List<RetrievalHit> hits) {
+        return hits.stream()
+                .anyMatch(hit -> hit.similarity() >= retrievalProperties.minSimilarity());
     }
 
     private ChatResult chatWithRetry(PromptBuildResult prompt) {

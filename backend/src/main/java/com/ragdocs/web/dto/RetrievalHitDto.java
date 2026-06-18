@@ -11,6 +11,8 @@ public record RetrievalHitDto(
         Integer pageEnd,
         int charLen,
         double similarity,
+        double keywordScore,
+        double finalScore,
         boolean aboveThreshold,
         String contentPreview
 ) {
