@@ -7,6 +7,7 @@
       </div>
       <div class="toolbar">
         <el-button :icon="Refresh" :loading="loading" @click="loadKbs">刷新</el-button>
+        <el-button :icon="Search" @click="router.push({ name: 'review' })">审查</el-button>
         <el-button :icon="DataAnalysis" @click="router.push({ name: 'admin' })">后台</el-button>
         <el-button type="primary" :icon="Plus" @click="createDialogVisible = true">新建</el-button>
         <el-button @click="logout">退出</el-button>
@@ -31,6 +32,9 @@
           <template #footer>
             <div class="card-actions">
               <el-button text :icon="FolderOpened" @click="openKb(kb.id)">打开</el-button>
+              <el-button text :icon="Search" @click="router.push({ name: 'review', query: { kbId: String(kb.id) } })">
+                审查
+              </el-button>
               <el-button text type="danger" :icon="Delete" @click="confirmDeleteKb(kb)">删除</el-button>
             </div>
           </template>
@@ -56,7 +60,7 @@
 </template>
 
 <script setup lang="ts">
-import { DataAnalysis, Delete, FolderOpened, Plus, Refresh } from '@element-plus/icons-vue'
+import { DataAnalysis, Delete, FolderOpened, Plus, Refresh, Search } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import { onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'

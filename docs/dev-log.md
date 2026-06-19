@@ -394,3 +394,29 @@
   - `docker compose up -d --build backend frontend` 成功，backend/frontend/postgres healthy。
   - 本地真实 Provider KB `real-provider-baseline-20260617` 上 10 条工程术语 query：top1 6/10，top3 10/10。
   - 检索接口返回 `similarity`、`keywordScore`、`finalScore`，前端调试页可展示三类分数。
+
+## 2026-06-18 — Post-MVP P2 定位升级与 Review MVP
+
+- 做了什么：
+  - 更新 `docs/interview-qna.md`，将项目定位升级为“研发知识库与架构审查助手”，补齐普通 PDF 问答差异、LangChain、Spring Boot、pgvector、Milvus、Elasticsearch、Mock/Real Provider、chunk、threshold、引用正确性、文档更新、RAG 定位、百万 chunk 和生产化缺口等高压追问。
+  - 新增 `docs/interview-script.md`，整理 30 秒开场、3 分钟讲法、5 分钟演示顺序、Review 演示输入和高压追问转场。
+  - 新增 Flyway `V2__review_reports.sql`，创建 `review_reports` 与 `review_citations`，审查引用保存 `heading_path` 快照，不依赖 live chunk join。
+  - 新增 Review 后端链路：`ReviewController`、`ReviewService`、`ReviewPromptBuilder`、`ReviewResultParser`、`ReviewRepository` 和相关 DTO/domain。
+  - 支持 2 个固定审查模板：`PRD_API_CONSISTENCY` 与 `TASK_TREE_RISK`；流程复用现有 embedding provider、hybrid retrieval、chat provider、citation parser 和 model call logs。
+  - 新增前端 `ReviewView.vue` 与 `reviews.ts`，首页和 KB 详情页增加“审查”入口，页面支持 KB 选择、审查类型、补充说明、执行审查、历史查看、风险等级、问题、建议和引用来源展示。
+  - README 同步项目标题、核心特性、Review 流程、页面、API、设计取舍、演示材料和 Roadmap。
+  - 登录页副标题同步为“研发知识库与架构审查助手”。
+  - 补齐 `127.0.0.1:3000/5173` CORS 白名单，避免浏览器用 127 访问前端时 POST `/api/auth/login` 因 Origin 不在白名单被拒。
+  - 在真实 Provider KB `real-provider-baseline-20260617` 上创建 1 条 Review 记录（id 1），类型为任务树遗漏风险检查，返回 `status=OK`、`riskLevel=UNKNOWN`，带 2 条引用来源。
+- 没做什么：
+  - 未引入 Agent、多 Agent、工具调用或自动执行写操作。
+  - 未引入 Elasticsearch、Milvus、rerank model、任务队列或新的外部服务。
+  - 未修改现有问答会话和 citations 表结构；Review 使用独立历史表。
+  - 未新增 README 截图文件，当前只做浏览器验收截图，不纳入展示截图集。
+- 验证：
+  - `backend`: `mvn -B test` 通过，25 个测试。
+  - `frontend`: `npm run build` 通过；仍有 VueUse PURE 注释和 Rollup 大 chunk 警告。
+  - `docker compose up -d --build backend frontend` 成功，backend/frontend/postgres healthy。
+  - Flyway 日志显示 schema 从 v1 迁移到 v2，`review_reports` / `review_citations` 创建成功。
+  - 容器内 HTTP smoke：`/actuator/health` 返回 `UP`；`/api/auth/login` 返回 token；`/api/reviews/types` 返回 2 个模板；`/api/reviews?kbId=4` 可回看审查历史。
+  - Playwright 浏览器验收：`http://127.0.0.1:3000/review?kbId=4` 登录成功，页面展示 1 条审查历史、审查结论、发现的问题、建议修改项和 2 条引用来源。

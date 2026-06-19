@@ -5,6 +5,7 @@ import HomeView from '../views/HomeView.vue'
 import KbDetailView from '../views/KbDetailView.vue'
 import ChatView from '../views/ChatView.vue'
 import AdminView from '../views/AdminView.vue'
+import ReviewView from '../views/ReviewView.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -13,6 +14,7 @@ const router = createRouter({
     { path: '/', name: 'home', component: HomeView, meta: { requiresAuth: true } },
     { path: '/kbs/:id', name: 'kb-detail', component: KbDetailView, meta: { requiresAuth: true } },
     { path: '/kbs/:id/chat', name: 'kb-chat', component: ChatView, meta: { requiresAuth: true } },
+    { path: '/review', name: 'review', component: ReviewView, meta: { requiresAuth: true } },
     { path: '/admin', name: 'admin', component: AdminView, meta: { requiresAuth: true } }
   ]
 })

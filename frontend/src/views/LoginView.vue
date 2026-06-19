@@ -5,7 +5,7 @@
         <div class="brand-mark">D</div>
         <div>
           <h1>DevDocs RAG</h1>
-          <p>项目文档智能问答系统</p>
+          <p>研发知识库与架构审查助手</p>
         </div>
       </div>
 

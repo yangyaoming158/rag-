@@ -9,6 +9,9 @@
       <div class="toolbar">
         <el-button :icon="Refresh" :loading="loading" @click="loadDocuments">刷新</el-button>
         <el-button :icon="DataAnalysis" @click="router.push({ name: 'admin' })">后台</el-button>
+        <el-button :icon="Tickets" @click="router.push({ name: 'review', query: { kbId: String(kbId) } })">
+          审查
+        </el-button>
         <el-button :icon="Search" @click="router.push({ name: 'kb-chat', params: { id: kbId } })">问答</el-button>
         <el-upload
           :http-request="uploadFile"

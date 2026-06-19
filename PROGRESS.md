@@ -4,7 +4,7 @@
 > 规则：一个 Phase 的全部 Gate 通过、且跑过全量测试 + Compose 冷启动后，才把状态改为 ✅ 并填完成日期。
 > Gate 不过保持 ⬜ 并在「备注」记原因；上一个 Phase 未 ✅，下一个不许开工。
 
-最近更新：2026-06-18（Post-MVP P1 Hybrid Search MVP 完成）
+最近更新：2026-06-18（Post-MVP P2 Review MVP 完成）
 
 ## 阶段总览
 
@@ -32,6 +32,8 @@
 | P0-4 | 演示视频 | ⏭️ 暂缓 | — | — | 用户决定先搁置，不伪造视频链接 |
 | P1-1 | 失败样本复盘 | ✅ | 2026-06-18 | docs/eval/failure-cases.md | 记录检索失败、引用定位问题、拒答边界和 provider 配置错误 |
 | P1-2 | Hybrid Search | ✅ | 2026-06-18 | docs/design/hybrid-search.md、docs/eval/hybrid-search.md | vector + keyword + RRF；工程术语 query top3 10/10；调试页展示 V/K/F 分数 |
+| P2-1 | 面试 Q&A 升级 | ✅ | 2026-06-18 | docs/interview-qna.md、docs/interview-script.md | 定位升级为“研发知识库与架构审查助手”；补齐真实 Provider、Hybrid、Review 和高压追问口径 |
+| P2-2 | 项目审查 / Review MVP | ✅ | 2026-06-18 | review_reports、review_citations、/api/reviews、ReviewView | 2 个固定模板；审查结果带引用并可历史查看；浏览器验收 `/review?kbId=4` 通过 |
 
 ## 各 Phase 验收 Gate 清单
 
