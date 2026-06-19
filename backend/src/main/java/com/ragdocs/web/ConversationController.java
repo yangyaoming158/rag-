@@ -3,10 +3,13 @@ package com.ragdocs.web;
 import com.ragdocs.auth.CurrentUser;
 import com.ragdocs.auth.JwtAuthenticationFilter;
 import com.ragdocs.common.ApiResponse;
+import com.ragdocs.rag.QaFeedbackService;
 import com.ragdocs.rag.RagService;
 import com.ragdocs.web.dto.ConversationDetailDto;
 import com.ragdocs.web.dto.ConversationDto;
 import com.ragdocs.web.dto.CreateConversationRequest;
+import com.ragdocs.web.dto.CreateQaFeedbackRequest;
+import com.ragdocs.web.dto.QaFeedbackDto;
 import com.ragdocs.web.dto.RagAnswerDto;
 import com.ragdocs.web.dto.SendMessageRequest;
 import jakarta.servlet.http.HttpServletRequest;
@@ -25,9 +28,11 @@ import java.util.List;
 @RequestMapping("/api/conversations")
 public class ConversationController {
     private final RagService ragService;
+    private final QaFeedbackService qaFeedbackService;
 
-    public ConversationController(RagService ragService) {
+    public ConversationController(RagService ragService, QaFeedbackService qaFeedbackService) {
         this.ragService = ragService;
+        this.qaFeedbackService = qaFeedbackService;
     }
 
     @PostMapping
@@ -52,6 +57,16 @@ public class ConversationController {
             HttpServletRequest request
     ) {
         return ApiResponse.ok(ragService.ask(currentUser(request).id(), id, body));
+    }
+
+    @PostMapping("/{id}/messages/{messageId}/feedback")
+    public ApiResponse<QaFeedbackDto> feedback(
+            @PathVariable long id,
+            @PathVariable long messageId,
+            @Valid @RequestBody CreateQaFeedbackRequest body,
+            HttpServletRequest request
+    ) {
+        return ApiResponse.ok(qaFeedbackService.submit(currentUser(request).id(), id, messageId, body));
     }
 
     private CurrentUser currentUser(HttpServletRequest request) {

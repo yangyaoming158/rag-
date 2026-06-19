@@ -49,6 +49,45 @@
                 <p>{{ citation.snippet }}</p>
               </div>
             </div>
+            <div v-if="message.role === 'ASSISTANT'" class="feedback-actions">
+              <el-button
+                size="small"
+                :icon="CircleCheck"
+                :type="message.feedbackRating === 'HELPFUL' ? 'success' : 'default'"
+                :loading="feedbackSubmittingId === message.id"
+                @click="submitQuickFeedback(message, 'HELPFUL')"
+              >
+                有帮助
+              </el-button>
+              <el-dropdown
+                trigger="click"
+                :disabled="feedbackSubmittingId === message.id"
+                @command="handleFeedbackCommand(message, $event)"
+              >
+                <el-button
+                  size="small"
+                  :icon="Warning"
+                  :type="message.feedbackRating && message.feedbackRating !== 'HELPFUL' ? 'warning' : 'default'"
+                >
+                  问题反馈
+                </el-button>
+                <template #dropdown>
+                  <el-dropdown-menu>
+                    <el-dropdown-item
+                      v-for="option in negativeFeedbackOptions"
+                      :key="option.rating"
+                      :command="option.rating"
+                      :icon="option.icon"
+                    >
+                      {{ option.label }}
+                    </el-dropdown-item>
+                  </el-dropdown-menu>
+                </template>
+              </el-dropdown>
+              <span v-if="message.feedbackRating" class="feedback-note">
+                已反馈：{{ feedbackLabel(message.feedbackRating) }}
+              </span>
+            </div>
           </article>
         </div>
 
@@ -70,16 +109,43 @@
       </section>
     </section>
   </main>
+
+  <el-dialog v-model="feedbackDialogVisible" title="回答反馈" width="520px">
+    <el-form label-width="84px">
+      <el-form-item label="类型">
+        <el-tag effect="plain">{{ feedbackLabel(feedbackForm.rating) }}</el-tag>
+      </el-form-item>
+      <el-form-item label="原因">
+        <el-input v-model="feedbackForm.reason" maxlength="120" show-word-limit />
+      </el-form-item>
+      <el-form-item label="备注">
+        <el-input
+          v-model="feedbackForm.comment"
+          type="textarea"
+          :rows="4"
+          maxlength="1000"
+          show-word-limit
+        />
+      </el-form-item>
+    </el-form>
+    <template #footer>
+      <el-button @click="feedbackDialogVisible = false">取消</el-button>
+      <el-button type="primary" :loading="feedbackSubmittingId !== null" @click="submitFeedbackDialog">
+        提交
+      </el-button>
+    </template>
+  </el-dialog>
 </template>
 
 <script setup lang="ts">
+import { Bottom, ChatDotRound, CircleCheck, Link, Top, Warning } from '@element-plus/icons-vue'
 import { ArrowLeft, Plus, Refresh } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import * as conversationApi from '../api/conversations'
 import * as kbApi from '../api/kbs'
-import type { ConversationDto, MessageDto } from '../api/conversations'
+import type { ConversationDto, MessageDto, QaFeedbackRating } from '../api/conversations'
 import type { KbDto } from '../api/kbs'
 
 const route = useRoute()
@@ -93,6 +159,33 @@ const question = ref('')
 const loading = ref(false)
 const sending = ref(false)
 const lastWarning = ref<string | null>(null)
+const feedbackDialogVisible = ref(false)
+const feedbackTarget = ref<MessageDto | null>(null)
+const feedbackSubmittingId = ref<number | null>(null)
+const feedbackForm = ref<{ rating: QaFeedbackRating; reason: string; comment: string }>({
+  rating: 'WRONG',
+  reason: '',
+  comment: ''
+})
+
+const feedbackLabels: Record<QaFeedbackRating, string> = {
+  HELPFUL: '有帮助',
+  WRONG: '答案错误',
+  CITATION_IRRELEVANT: '引用无关',
+  SHOULD_HAVE_ANSWERED: '应回答',
+  SHOULD_HAVE_REFUSED: '应拒答',
+  TOO_LONG: '太长',
+  TOO_SHORT: '太短'
+}
+
+const negativeFeedbackOptions = [
+  { rating: 'WRONG' as QaFeedbackRating, label: feedbackLabels.WRONG, icon: Warning },
+  { rating: 'CITATION_IRRELEVANT' as QaFeedbackRating, label: feedbackLabels.CITATION_IRRELEVANT, icon: Link },
+  { rating: 'SHOULD_HAVE_ANSWERED' as QaFeedbackRating, label: feedbackLabels.SHOULD_HAVE_ANSWERED, icon: ChatDotRound },
+  { rating: 'SHOULD_HAVE_REFUSED' as QaFeedbackRating, label: feedbackLabels.SHOULD_HAVE_REFUSED, icon: Warning },
+  { rating: 'TOO_LONG' as QaFeedbackRating, label: feedbackLabels.TOO_LONG, icon: Top },
+  { rating: 'TOO_SHORT' as QaFeedbackRating, label: feedbackLabels.TOO_SHORT, icon: Bottom }
+]
 
 const currentKb = computed(() => kbs.value.find((kb) => kb.id === kbId))
 
@@ -156,11 +249,61 @@ async function send() {
   }
 }
 
+async function submitQuickFeedback(message: MessageDto, rating: QaFeedbackRating) {
+  await submitFeedback(message, rating, feedbackLabels[rating], '')
+}
+
+function openFeedbackDialog(message: MessageDto, rating: QaFeedbackRating) {
+  feedbackTarget.value = message
+  feedbackForm.value = {
+    rating,
+    reason: feedbackLabels[rating],
+    comment: ''
+  }
+  feedbackDialogVisible.value = true
+}
+
+function handleFeedbackCommand(message: MessageDto, rating: string | number | object) {
+  openFeedbackDialog(message, String(rating) as QaFeedbackRating)
+}
+
+async function submitFeedbackDialog() {
+  if (!feedbackTarget.value) return
+  await submitFeedback(
+    feedbackTarget.value,
+    feedbackForm.value.rating,
+    feedbackForm.value.reason,
+    feedbackForm.value.comment
+  )
+}
+
+async function submitFeedback(message: MessageDto, rating: QaFeedbackRating, reason: string, comment: string) {
+  if (!activeConversationId.value) return
+  feedbackSubmittingId.value = message.id
+  try {
+    const result = await conversationApi.submitFeedback(activeConversationId.value, message.id, {
+      rating,
+      reason: reason.trim() || undefined,
+      comment: comment.trim() || undefined
+    })
+    message.feedbackRating = result.rating
+    feedbackDialogVisible.value = false
+    feedbackTarget.value = null
+    ElMessage.success('反馈已记录')
+  } finally {
+    feedbackSubmittingId.value = null
+  }
+}
+
 function statusTag(status: string) {
   if (status === 'OK') return 'success'
   if (status === 'NO_ANSWER') return 'info'
   if (status === 'UNGROUNDED') return 'warning'
   return 'danger'
+}
+
+function feedbackLabel(rating: QaFeedbackRating) {
+  return feedbackLabels[rating]
 }
 
 function formatTime(value: string) {
@@ -275,6 +418,18 @@ function formatTime(value: string) {
 .citations {
   display: grid;
   gap: 10px;
+}
+
+.feedback-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.feedback-note {
+  color: #6b7280;
+  font-size: 12px;
 }
 
 .citation {

@@ -191,6 +191,109 @@
           />
         </el-tab-pane>
 
+        <el-tab-pane label="回答反馈" name="feedback">
+          <div class="table-tools">
+            <el-select v-model="feedbackRating" clearable placeholder="反馈类型" @change="reloadQaFeedback">
+              <el-option
+                v-for="option in feedbackOptions"
+                :key="option.value"
+                :label="option.label"
+                :value="option.value"
+              />
+            </el-select>
+            <el-button :icon="Refresh" :loading="feedbackLoading" @click="loadQaFeedback">刷新</el-button>
+          </div>
+
+          <el-table :data="qaFeedback" v-loading="feedbackLoading" class="data-table" row-key="id">
+            <el-table-column type="expand" width="44">
+              <template #default="{ row }">
+                <div class="expanded-row">
+                  <el-alert
+                    v-if="row.comment"
+                    :title="row.comment"
+                    type="warning"
+                    :closable="false"
+                  />
+                  <el-descriptions :column="3" border>
+                    <el-descriptions-item label="用户">{{ row.username }} (#{{ row.userId }})</el-descriptions-item>
+                    <el-descriptions-item label="messageId">{{ row.messageId }}</el-descriptions-item>
+                    <el-descriptions-item label="conversationId">{{ row.conversationId }}</el-descriptions-item>
+                    <el-descriptions-item label="Provider">{{ row.provider || '-' }}</el-descriptions-item>
+                    <el-descriptions-item label="Model">{{ row.model || '-' }}</el-descriptions-item>
+                    <el-descriptions-item label="Token">{{ feedbackTokenTotal(row) }}</el-descriptions-item>
+                  </el-descriptions>
+                  <div class="feedback-block">
+                    <strong>原问题</strong>
+                    <p>{{ row.question || '-' }}</p>
+                  </div>
+                  <div class="feedback-block">
+                    <strong>回答</strong>
+                    <p>{{ row.answer }}</p>
+                  </div>
+                  <div class="feedback-block">
+                    <strong>引用</strong>
+                    <el-empty v-if="row.citations.length === 0" description="暂无引用" />
+                    <div v-else class="feedback-citations">
+                      <div v-for="citation in row.citations" :key="`${row.id}-${citation.rank}`" class="feedback-citation">
+                        <div class="citation-title">
+                          <strong>[{{ citation.rank }}] {{ citation.documentFilename }}</strong>
+                          <el-tag size="small" effect="plain">{{ citation.similarity.toFixed(3) }}</el-tag>
+                        </div>
+                        <span v-if="citation.headingPath">{{ citation.headingPath }}</span>
+                        <p>{{ citation.snippet }}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </template>
+            </el-table-column>
+            <el-table-column prop="rating" label="反馈" width="150">
+              <template #default="{ row }">
+                <el-tag :type="feedbackTag(row.rating)" effect="plain">{{ feedbackLabel(row.rating) }}</el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column prop="kbName" label="知识库" min-width="180" />
+            <el-table-column label="问题" min-width="260">
+              <template #default="{ row }">
+                <p class="text-preview">{{ row.question || '-' }}</p>
+              </template>
+            </el-table-column>
+            <el-table-column label="回答状态" width="120">
+              <template #default="{ row }">
+                <el-tag :type="answerStatusTag(row.answerStatus)" effect="plain">{{ row.answerStatus }}</el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column label="Provider / Model" min-width="210">
+              <template #default="{ row }">
+                <div class="provider-cell">
+                  <strong>{{ row.provider || '-' }}</strong>
+                  <span>{{ row.model || '-' }}</span>
+                </div>
+              </template>
+            </el-table-column>
+            <el-table-column label="延迟" width="140">
+              <template #default="{ row }">{{ feedbackLatency(row) }}</template>
+            </el-table-column>
+            <el-table-column prop="createdAt" label="反馈时间" width="170">
+              <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>
+            </el-table-column>
+            <el-table-column label="操作" width="130" fixed="right">
+              <template #default="{ row }">
+                <el-button text :icon="ChatDotRound" @click="openFeedbackConversation(row)">会话</el-button>
+              </template>
+            </el-table-column>
+          </el-table>
+
+          <el-pagination
+            v-if="feedbackPage.totalElements > feedbackPage.size"
+            layout="prev, pager, next"
+            :current-page="feedbackPage.page + 1"
+            :page-size="feedbackPage.size"
+            :total="feedbackPage.totalElements"
+            @current-change="changeFeedbackPage"
+          />
+        </el-tab-pane>
+
         <el-tab-pane label="检索调试" name="retrieval">
           <div class="retrieval-form">
             <div class="retrieval-controls">
@@ -255,6 +358,7 @@
 <script setup lang="ts">
 import {
   ArrowLeft,
+  ChatDotRound,
   Collection,
   Document,
   Refresh,
@@ -268,7 +372,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import * as adminApi from '../api/admin'
-import type { AdminIngestionJobDto, ModelCallDto, StatsOverviewDto } from '../api/admin'
+import type { AdminIngestionJobDto, AdminQaFeedbackDto, ModelCallDto, StatsOverviewDto } from '../api/admin'
 import * as kbApi from '../api/kbs'
 import type { KbDto, RetrievalDebugResponse } from '../api/kbs'
 
@@ -278,26 +382,39 @@ const stats = ref<StatsOverviewDto | null>(null)
 const kbs = ref<KbDto[]>([])
 const ingestionJobs = ref<AdminIngestionJobDto[]>([])
 const modelCalls = ref<ModelCallDto[]>([])
+const qaFeedback = ref<AdminQaFeedbackDto[]>([])
 const retrievalResult = ref<RetrievalDebugResponse | null>(null)
 const statsLoading = ref(false)
 const ingestionLoading = ref(false)
 const modelLoading = ref(false)
+const feedbackLoading = ref(false)
 const retrievalLoading = ref(false)
 const ingestionStatus = ref('')
 const modelType = ref('')
 const modelStatus = ref('')
+const feedbackRating = ref('')
 const retrievalKbId = ref<number | null>(null)
 const retrievalQuery = ref('')
 const retrievalTopK = ref(8)
 const ingestionPage = ref({ page: 0, size: 20, totalElements: 0 })
 const modelPage = ref({ page: 0, size: 20, totalElements: 0 })
+const feedbackPage = ref({ page: 0, size: 20, totalElements: 0 })
 
 const refreshing = computed(() =>
-  statsLoading.value || ingestionLoading.value || modelLoading.value || retrievalLoading.value
+  statsLoading.value || ingestionLoading.value || modelLoading.value || feedbackLoading.value || retrievalLoading.value
 )
 
+const feedbackOptions = [
+  { value: 'WRONG', label: '答案错误' },
+  { value: 'CITATION_IRRELEVANT', label: '引用无关' },
+  { value: 'SHOULD_HAVE_ANSWERED', label: '应回答' },
+  { value: 'SHOULD_HAVE_REFUSED', label: '应拒答' },
+  { value: 'TOO_LONG', label: '太长' },
+  { value: 'TOO_SHORT', label: '太短' }
+]
+
 onMounted(async () => {
-  await Promise.all([loadOverview(), loadKbs(), loadIngestionJobs(), loadModelCalls()])
+  await Promise.all([loadOverview(), loadKbs(), loadIngestionJobs(), loadModelCalls(), loadQaFeedback()])
   if (kbs.value.length > 0) {
     retrievalKbId.value = kbs.value[0].id
   }
@@ -355,6 +472,25 @@ async function loadModelCalls() {
   }
 }
 
+async function loadQaFeedback() {
+  feedbackLoading.value = true
+  try {
+    const result = await adminApi.listQaFeedback({
+      rating: feedbackRating.value || undefined,
+      page: feedbackPage.value.page,
+      size: feedbackPage.value.size
+    })
+    qaFeedback.value = result.content
+    feedbackPage.value = {
+      page: result.page,
+      size: result.size,
+      totalElements: result.totalElements
+    }
+  } finally {
+    feedbackLoading.value = false
+  }
+}
+
 async function refreshCurrent() {
   if (activeTab.value === 'overview') {
     await loadOverview()
@@ -362,6 +498,8 @@ async function refreshCurrent() {
     await loadIngestionJobs()
   } else if (activeTab.value === 'model-calls') {
     await loadModelCalls()
+  } else if (activeTab.value === 'feedback') {
+    await loadQaFeedback()
   } else if (activeTab.value === 'retrieval') {
     await loadKbs()
   }
@@ -377,6 +515,11 @@ async function reloadModelCalls() {
   await loadModelCalls()
 }
 
+async function reloadQaFeedback() {
+  feedbackPage.value.page = 0
+  await loadQaFeedback()
+}
+
 async function changeIngestionPage(value: number) {
   ingestionPage.value.page = value - 1
   await loadIngestionJobs()
@@ -387,11 +530,24 @@ async function changeModelPage(value: number) {
   await loadModelCalls()
 }
 
+async function changeFeedbackPage(value: number) {
+  feedbackPage.value.page = value - 1
+  await loadQaFeedback()
+}
+
 async function openDocument(row: AdminIngestionJobDto) {
   await router.push({
     name: 'kb-detail',
     params: { id: row.kbId },
     query: { documentId: String(row.documentId) }
+  })
+}
+
+async function openFeedbackConversation(row: AdminQaFeedbackDto) {
+  await router.push({
+    name: 'kb-chat',
+    params: { id: row.kbId },
+    query: { conversationId: String(row.conversationId) }
   })
 }
 
@@ -443,12 +599,39 @@ function documentStatusTag(status: string) {
   return 'warning'
 }
 
+function answerStatusTag(status: string) {
+  if (status === 'OK') return 'success'
+  if (status === 'NO_ANSWER') return 'info'
+  if (status === 'UNGROUNDED') return 'warning'
+  return 'danger'
+}
+
+function feedbackTag(rating: string) {
+  if (rating === 'WRONG' || rating === 'CITATION_IRRELEVANT') return 'danger'
+  if (rating === 'SHOULD_HAVE_ANSWERED' || rating === 'SHOULD_HAVE_REFUSED') return 'warning'
+  return 'info'
+}
+
+function feedbackLabel(rating: string) {
+  return feedbackOptions.find((option) => option.value === rating)?.label || rating
+}
+
 function isProcessing(status: string) {
   return status === 'PARSING' || status === 'CHUNKING' || status === 'EMBEDDING'
 }
 
 function tokenTotal(row: ModelCallDto) {
   return (row.promptTokens || 0) + (row.completionTokens || 0)
+}
+
+function feedbackTokenTotal(row: AdminQaFeedbackDto) {
+  return (row.promptTokens || 0) + (row.completionTokens || 0)
+}
+
+function feedbackLatency(row: AdminQaFeedbackDto) {
+  const answer = row.answerLatencyMs == null ? '-' : row.answerLatencyMs
+  const model = row.modelLatencyMs == null ? '-' : row.modelLatencyMs
+  return `${answer} / ${model} ms`
 }
 
 function scorePercent(value: number) {
@@ -584,5 +767,48 @@ function formatTime(value: string | null) {
   line-height: 1.55;
   margin: 0;
   overflow-wrap: anywhere;
+}
+
+.text-preview {
+  line-height: 1.5;
+  margin: 0;
+  max-height: 48px;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+
+.provider-cell,
+.feedback-block,
+.feedback-citations,
+.feedback-citation {
+  display: grid;
+  gap: 6px;
+}
+
+.provider-cell span,
+.feedback-citation span {
+  color: #6b7280;
+  overflow-wrap: anywhere;
+}
+
+.feedback-block p,
+.feedback-citation p {
+  line-height: 1.6;
+  margin: 0;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.feedback-citation {
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  padding: 12px;
+}
+
+.citation-title {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
 }
 </style>

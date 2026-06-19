@@ -420,3 +420,26 @@
   - Flyway 日志显示 schema 从 v1 迁移到 v2，`review_reports` / `review_citations` 创建成功。
   - 容器内 HTTP smoke：`/actuator/health` 返回 `UP`；`/api/auth/login` 返回 token；`/api/reviews/types` 返回 2 个模板；`/api/reviews?kbId=4` 可回看审查历史。
   - Playwright 浏览器验收：`http://127.0.0.1:3000/review?kbId=4` 登录成功，页面展示 1 条审查历史、审查结论、发现的问题、建议修改项和 2 条引用来源。
+
+## 2026-06-19 — Post-MVP P3 质量治理与生产化设计
+
+- 做了什么：
+  - 新增 Flyway `V3__qa_feedback.sql`，创建 `qa_feedback`，支持 `HELPFUL`、`WRONG`、`CITATION_IRRELEVANT`、`SHOULD_HAVE_ANSWERED`、`SHOULD_HAVE_REFUSED`、`TOO_LONG`、`TOO_SHORT` 七类反馈。
+  - 新增 `QaFeedbackRepository` 与 `QaFeedbackService`，提交反馈时校验消息必须属于当前用户会话且必须是助手回答；同一用户对同一回答重复反馈会覆盖为最新类型。
+  - `MessageDto` 增加 `feedbackRating`，会话回看时可显示当前用户已有反馈。
+  - 新增 `POST /api/conversations/{id}/messages/{messageId}/feedback` 和 `GET /api/admin/qa-feedback`。
+  - 后台低质量回答列表聚合原问题、回答、引用、provider、model、回答 latency、模型 latency、token、用户备注，并可跳回对应会话。
+  - 问答页新增“有帮助”快速反馈和负向反馈菜单；负向反馈可填写原因和备注。
+  - 新增 `docs/design/document-versioning.md`，说明为什么 MVP 采用删除+重传，以及生产化如何引入 `document_versions`、latest READY 检索和 citation 快照。
+  - README 和 `PROGRESS.md` 同步 P3 能力。
+- 没做什么：
+  - 未实现文档版本化 schema 迁移；当前只是生产化设计文档。
+  - 未引入在线学习、自动重评测、Agent 或自动修复回答。
+  - 未新增外部服务，低质量后台仍使用现有 Spring Boot + PostgreSQL + Vue。
+- 验证：
+  - `backend`: `mvn -B test` 通过，25 个测试。
+  - `frontend`: `npm run build` 通过；仍有 VueUse PURE 注释和 Rollup 大 chunk 警告。
+  - `docker compose up -d --build backend frontend` 成功，backend/frontend/postgres healthy。
+  - Flyway 日志显示 schema 从 v2 迁移到 v3，`qa_feedback` 创建成功。
+  - HTTP smoke：`/actuator/health` 返回 `UP`；`/api/admin/qa-feedback?page=0&size=1` 返回空分页。
+  - 反馈链路 smoke：对本地 conversation 28 / assistant message 68 提交 `CITATION_IRRELEVANT`，返回 feedback id 1；后台按该类型查询可回看原问题、回答、2 条引用、provider/model、回答 latency 与模型 latency。

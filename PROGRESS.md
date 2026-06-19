@@ -4,7 +4,7 @@
 > 规则：一个 Phase 的全部 Gate 通过、且跑过全量测试 + Compose 冷启动后，才把状态改为 ✅ 并填完成日期。
 > Gate 不过保持 ⬜ 并在「备注」记原因；上一个 Phase 未 ✅，下一个不许开工。
 
-最近更新：2026-06-18（Post-MVP P2 Review MVP 完成）
+最近更新：2026-06-19（Post-MVP P3 质量治理与生产化设计）
 
 ## 阶段总览
 
@@ -34,6 +34,8 @@
 | P1-2 | Hybrid Search | ✅ | 2026-06-18 | docs/design/hybrid-search.md、docs/eval/hybrid-search.md | vector + keyword + RRF；工程术语 query top3 10/10；调试页展示 V/K/F 分数 |
 | P2-1 | 面试 Q&A 升级 | ✅ | 2026-06-18 | docs/interview-qna.md、docs/interview-script.md | 定位升级为“研发知识库与架构审查助手”；补齐真实 Provider、Hybrid、Review 和高压追问口径 |
 | P2-2 | 项目审查 / Review MVP | ✅ | 2026-06-18 | review_reports、review_citations、/api/reviews、ReviewView | 2 个固定模板；审查结果带引用并可历史查看；浏览器验收 `/review?kbId=4` 通过 |
+| P3-1 | 用户反馈与低质量回答后台 | ✅ | 2026-06-19 | qa_feedback、/api/admin/qa-feedback、ChatView、AdminView | 用户可反馈回答质量；后台可按负向类型查看原问题、回答、引用、provider、model 和 latency |
+| P3-2 | 文档版本化设计 | ✅ | 2026-06-19 | docs/design/document-versioning.md | 明确 MVP 删除+重传边界；生产化 latest READY 检索、version schema 与 citation 快照方案 |
 
 ## 各 Phase 验收 Gate 清单
 

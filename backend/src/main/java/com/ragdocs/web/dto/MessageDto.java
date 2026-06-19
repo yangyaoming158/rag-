@@ -12,6 +12,7 @@ public record MessageDto(
         Integer completionTokens,
         Long latencyMs,
         OffsetDateTime createdAt,
-        List<CitationDto> citations
+        List<CitationDto> citations,
+        String feedbackRating
 ) {
 }

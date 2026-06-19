@@ -8,6 +8,7 @@ import org.springframework.stereotype.Repository;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public class MessageRepository {
@@ -44,6 +45,19 @@ public class MessageRepository {
                 ORDER BY created_at ASC, id ASC
                 """;
         return jdbcTemplate.query(sql, this::mapMessage, conversationId);
+    }
+
+    public Optional<RagMessage> findAssistantByOwnerAndConversation(long ownerId, long conversationId, long messageId) {
+        String sql = """
+                SELECT m.id, m.conversation_id, m.role, m.content, m.status,
+                       m.prompt_tokens, m.completion_tokens, m.latency_ms, m.created_at
+                FROM messages m
+                JOIN conversations c ON c.id = m.conversation_id
+                WHERE c.user_id = ? AND c.id = ? AND m.id = ? AND m.role = 'ASSISTANT'
+                """;
+        return jdbcTemplate.query(sql, this::mapMessage, ownerId, conversationId, messageId)
+                .stream()
+                .findFirst();
     }
 
     public List<RagHistoryMessage> findRecentHistory(long conversationId, int limit) {

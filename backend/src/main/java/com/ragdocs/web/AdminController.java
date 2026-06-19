@@ -5,11 +5,13 @@ import com.ragdocs.auth.JwtAuthenticationFilter;
 import com.ragdocs.common.ApiResponse;
 import com.ragdocs.common.BusinessException;
 import com.ragdocs.common.ErrorCode;
+import com.ragdocs.rag.QaFeedbackService;
 import com.ragdocs.repository.AdminStatsRepository;
 import com.ragdocs.repository.IngestionJobRepository;
 import com.ragdocs.repository.ModelCallLogRepository;
 import com.ragdocs.retrieval.RetrievalService;
 import com.ragdocs.web.dto.AdminIngestionJobDto;
+import com.ragdocs.web.dto.AdminQaFeedbackDto;
 import com.ragdocs.web.dto.AdminRetrievalDebugRequest;
 import com.ragdocs.web.dto.ModelCallDto;
 import com.ragdocs.web.dto.PageResponse;
@@ -34,22 +36,33 @@ public class AdminController {
     private static final Set<String> JOB_STATUSES = Set.of("PENDING", "RUNNING", "SUCCEEDED", "FAILED");
     private static final Set<String> CALL_TYPES = Set.of("CHAT", "EMBEDDING");
     private static final Set<String> CALL_STATUSES = Set.of("OK", "ERROR");
+    private static final Set<String> FEEDBACK_RATINGS = Set.of(
+            "WRONG",
+            "CITATION_IRRELEVANT",
+            "SHOULD_HAVE_ANSWERED",
+            "SHOULD_HAVE_REFUSED",
+            "TOO_LONG",
+            "TOO_SHORT"
+    );
 
     private final IngestionJobRepository ingestionJobRepository;
     private final ModelCallLogRepository modelCallLogRepository;
     private final AdminStatsRepository adminStatsRepository;
     private final RetrievalService retrievalService;
+    private final QaFeedbackService qaFeedbackService;
 
     public AdminController(
             IngestionJobRepository ingestionJobRepository,
             ModelCallLogRepository modelCallLogRepository,
             AdminStatsRepository adminStatsRepository,
-            RetrievalService retrievalService
+            RetrievalService retrievalService,
+            QaFeedbackService qaFeedbackService
     ) {
         this.ingestionJobRepository = ingestionJobRepository;
         this.modelCallLogRepository = modelCallLogRepository;
         this.adminStatsRepository = adminStatsRepository;
         this.retrievalService = retrievalService;
+        this.qaFeedbackService = qaFeedbackService;
     }
 
     @GetMapping("/ingestion-jobs")
@@ -90,6 +103,19 @@ public class AdminController {
                 .toList();
         long total = modelCallLogRepository.countAdminCalls(normalizedType, normalizedStatus);
         return ApiResponse.ok(PageResponse.of(content, pageSpec.page(), pageSpec.size(), total));
+    }
+
+    @GetMapping("/qa-feedback")
+    public ApiResponse<PageResponse<AdminQaFeedbackDto>> qaFeedback(
+            @RequestParam(required = false) String rating,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            HttpServletRequest request
+    ) {
+        ensureAdmin(currentUser(request));
+        String normalizedRating = normalize(rating, FEEDBACK_RATINGS, "反馈类型不合法");
+        Page pageSpec = normalizePage(page, size);
+        return ApiResponse.ok(qaFeedbackService.listLowQuality(normalizedRating, pageSpec.page(), pageSpec.size()));
     }
 
     @PostMapping("/retrieval-debug")

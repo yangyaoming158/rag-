@@ -15,6 +15,7 @@ import com.ragdocs.repository.ConversationRepository;
 import com.ragdocs.repository.KnowledgeBaseRepository;
 import com.ragdocs.repository.MessageRepository;
 import com.ragdocs.repository.ModelCallLogRepository;
+import com.ragdocs.repository.QaFeedbackRepository;
 import com.ragdocs.repository.RetrievalRepository;
 import com.ragdocs.retrieval.RetrievalHit;
 import com.ragdocs.web.dto.CitationDto;
@@ -40,6 +41,7 @@ public class RagService {
     private final ConversationRepository conversationRepository;
     private final MessageRepository messageRepository;
     private final CitationRepository citationRepository;
+    private final QaFeedbackRepository qaFeedbackRepository;
     private final RetrievalRepository retrievalRepository;
     private final ModelCallLogRepository modelCallLogRepository;
     private final EmbeddingProvider embeddingProvider;
@@ -53,6 +55,7 @@ public class RagService {
             ConversationRepository conversationRepository,
             MessageRepository messageRepository,
             CitationRepository citationRepository,
+            QaFeedbackRepository qaFeedbackRepository,
             RetrievalRepository retrievalRepository,
             ModelCallLogRepository modelCallLogRepository,
             EmbeddingProvider embeddingProvider,
@@ -65,6 +68,7 @@ public class RagService {
         this.conversationRepository = conversationRepository;
         this.messageRepository = messageRepository;
         this.citationRepository = citationRepository;
+        this.qaFeedbackRepository = qaFeedbackRepository;
         this.retrievalRepository = retrievalRepository;
         this.modelCallLogRepository = modelCallLogRepository;
         this.embeddingProvider = embeddingProvider;
@@ -97,10 +101,18 @@ public class RagService {
         Map<Long, List<Citation>> citationsByMessage = citationRepository.findByMessageIds(
                 messages.stream().map(RagMessage::id).toList()
         ).stream().collect(Collectors.groupingBy(Citation::messageId));
+        Map<Long, String> feedbackByMessage = qaFeedbackRepository.findRatingsByUserAndMessageIds(
+                ownerId,
+                messages.stream().map(RagMessage::id).toList()
+        );
         return new ConversationDetailDto(
                 toDto(conversation),
                 messages.stream()
-                        .map(message -> toDto(message, citationsByMessage.getOrDefault(message.id(), List.of())))
+                        .map(message -> toDto(
+                                message,
+                                citationsByMessage.getOrDefault(message.id(), List.of()),
+                                feedbackByMessage.get(message.id())
+                        ))
                         .toList()
         );
     }
@@ -269,7 +281,7 @@ public class RagService {
         return new ConversationDto(conversation.id(), conversation.kbId(), conversation.title(), conversation.createdAt());
     }
 
-    private MessageDto toDto(RagMessage message, List<Citation> citations) {
+    private MessageDto toDto(RagMessage message, List<Citation> citations, String feedbackRating) {
         return new MessageDto(
                 message.id(),
                 message.role(),
@@ -282,7 +294,8 @@ public class RagService {
                 citations.stream()
                         .sorted(Comparator.comparingInt(Citation::rank))
                         .map(this::toDto)
-                        .toList()
+                        .toList(),
+                feedbackRating
         );
     }
 
